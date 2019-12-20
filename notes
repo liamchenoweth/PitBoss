@@ -1,0 +1,22 @@
+What should it do:
+ - Define an arbitrary pipeline
+    - This pipeline will have set functions that can be farmed out to containers
+    - Pipelines should be hard typed
+    - Pipelines should be able to cycle
+ - Have that pipeline kicked off by a message queue
+    - This pipeline should be run in it's own container
+    - Should have built in logging
+    - Should have on tracking of child containers
+ - All pipelines then monitored by an overseer
+    - This overseer needs to monitor running pipelines
+    - needs to be stateless or backed by a state store
+    - needs to have good error and fail over management of pipelines
+    - needs to be able to retry pipelines
+
+Farmed containers
+ - Should be reusable by the same pipeline
+ - Should be very fast to start up
+ - Could have reused objects such as connections? (Could have security implications)
+
+Start with just pipelines, don't bother with streaming or batch data
+ - treat all as batches, either large or small
