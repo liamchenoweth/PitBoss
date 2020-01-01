@@ -7,7 +7,9 @@ namespace BossContainer
     {
         public static void Main(string[] args)
         {
-            BossWebServer.CreateHostBuilder(args).Build().Run();
+            BossWebServer server = new BossWebServer();
+            var host = server.StartWebHost(args);
+            host.WaitForShutdown();
         }
     }
 }

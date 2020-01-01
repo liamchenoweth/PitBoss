@@ -7,8 +7,8 @@ namespace PitBoss {
         }
 
         [HttpGet("/heartbeat")]
-        public JobStatus Heartbeat() {
-            return new JobStatus();
+        public OperationStatus Heartbeat() {
+            return new OperationStatus();
         }
     }
 }

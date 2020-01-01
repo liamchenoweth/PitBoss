@@ -8,8 +8,8 @@ namespace PitBoss {
         }
 
         [HttpPost("request")]
-        public JobRequest RequestJob(string pipelineName) {
-            return new JobRequest();
+        public PipelineRequest RequestJob(string pipelineName) {
+            return new PipelineRequest();
         }
     }
 }

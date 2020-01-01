@@ -3,5 +3,11 @@
         "Urls": [
             "http://localhost:4000"
         ]
-    }
+    },
+    "Boss": {
+        "Scripts":
+        {
+            "Location": "scripts"
+        }
+    }   
 }

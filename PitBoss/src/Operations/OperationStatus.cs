@@ -1,6 +1,6 @@
 namespace PitBoss
 {
-    public class JobStatus {
+    public class OperationStatus {
         
     }
     

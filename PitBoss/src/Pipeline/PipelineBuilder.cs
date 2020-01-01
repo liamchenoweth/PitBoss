@@ -4,12 +4,13 @@ using System.Collections.Generic;
 namespace PitBoss {
     public interface IPipelineBuilder
     {
-        PipelineBuilder Build();
+        Pipeline Build();
     }
 
     public abstract class PipelineBuilder {
         internal List<PipelineStep> _steps;
         internal PipelineDescriptor _description;
+        public abstract Pipeline Build();
     }
 
     public class PipelineBuilder<TIn> : PipelineBuilder {
@@ -17,6 +18,7 @@ namespace PitBoss {
 
         public PipelineBuilder(PipelineDescriptor descritpion) {
             _description = descritpion;
+            _steps = new List<PipelineStep>();
         }
 
         private PipelineBuilder(PipelineBuilder copy) {
@@ -29,8 +31,8 @@ namespace PitBoss {
             return new PipelineBuilder<TOut>(this);
         }
 
-        public Pipeline Build() {
-            return new Pipeline(_steps);
+        public override Pipeline Build() {
+            return new Pipeline(_description, _steps);
         }
     }
 }

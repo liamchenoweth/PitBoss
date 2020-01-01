@@ -1,24 +1,21 @@
+using Microsoft.Extensions.Configuration;
+
 namespace PitBoss {
     public class Boss : IBoss {
-        private BossDescriptor _desc;
-        public Boss(BossDescriptor desc) {
-            _desc = desc;
+
+        private IPipelineManager _pipelineManager;
+        private IConfiguration _configuration;
+
+        public Boss(IPipelineManager pipelineManager, IConfiguration configuration) 
+        {
+            _pipelineManager = pipelineManager;
+            _configuration = configuration;
+            OnStartUp();
         }
 
-        public void ProcessRequest(JobRequest request) {
-
-        }
-
-        public void GeneratePipelineDefinitions() {
-
-        }
-
-        public void GenerateOperations() {
-
-        }
-
-        public void CreateContainers(Pipeline pipeline) {
-
+        private void OnStartUp()
+        {
+            _pipelineManager.CompilePipelines(_configuration["Boss:Scripts:Location"]);
         }
     }
 }

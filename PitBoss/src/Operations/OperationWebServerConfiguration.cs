@@ -9,27 +9,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Logging;
 
 namespace PitBoss
 {
-    public class BossWebServerConfiguration {
+    public class OperationWebServerConfiguration {
         private IConfiguration _config;
-        private ILogger _logger;
 
-        public BossWebServerConfiguration(IConfiguration config) {
+        public OperationWebServerConfiguration(IConfiguration config) {
             _config = config;
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRouting();
-            services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
-            services.AddSingleton<IBoss, Boss>();
-            services.AddTransient<IRequestManager, DefaultRequestManager>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IBoss boss)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
         }

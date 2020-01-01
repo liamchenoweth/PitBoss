@@ -4,16 +4,15 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using Serilog;
 using PitBoss.Utils;
 
 namespace PitBoss
 {
-    public class BossWebServer {
+    public class OperationWebServer {
 
-        public BossWebServer()
+        public OperationWebServer()
         {
             StartUp();
         }
@@ -43,7 +42,7 @@ namespace PitBoss
                         }
                     }
                 })
-                .UseStartup<BossWebServerConfiguration>()
+                .UseStartup<OperationWebServerConfiguration>()
                 .Build();
 
             host.Start();

@@ -1,5 +1,5 @@
 #!/usr/bin/env dotnet-script
-#r "../PitBoss/bin/Debug/netcoreapp3.1/PitBoss.dll"
+#r "../../PitBoss/bin/Debug/netcoreapp3.1/PitBoss.dll"
 using PitBoss;
 
 class Builder : IPipelineBuilder {

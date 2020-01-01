@@ -20,3 +20,7 @@ Farmed containers
 
 Start with just pipelines, don't bother with streaming or batch data
  - treat all as batches, either large or small
+
+Pipeline -> Collection of operations
+Job -> request for pipeline run
+Operation -> single thing to do
