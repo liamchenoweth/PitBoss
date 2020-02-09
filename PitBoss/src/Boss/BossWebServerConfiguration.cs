@@ -25,11 +25,14 @@ namespace PitBoss
         {
             services.AddRouting();
             services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
-            services.AddSingleton<IBoss, Boss>();
-            services.AddTransient<IRequestManager, DefaultRequestManager>();
+            services.AddTransient<IPipelineRequestManager, DefaultPipelineRequestManager>();
+            services.AddTransient<IOperationRequestManager, DefaultOperationRequestManager>();
+            // Hosted Services
+            services.AddHostedService<OperationService>();
+            services.AddHostedService<ContainerService>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IBoss boss)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
         }

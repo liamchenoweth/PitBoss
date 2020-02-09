@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using PitBoss.Utils;
+using System.Threading.Tasks;
 
 namespace PitBoss {
     public class DefaultPipelineManager : IPipelineManager {
@@ -18,7 +20,7 @@ namespace PitBoss {
             _logger = logger;
         }
 
-        public List<Pipeline> Pipelines 
+        public IEnumerable<Pipeline> Pipelines 
         { 
             get
             {
@@ -26,7 +28,16 @@ namespace PitBoss {
             } 
         }
 
-        public List<Pipeline> CompilePipelines(string directory)
+        public bool Ready {get; private set;} = false;
+
+        public IEnumerable<Pipeline> CompilePipelines(string directory)
+        {
+            var task = CompilePipelinesAsync(directory);
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<IEnumerable<Pipeline>> CompilePipelinesAsync(string directory)
         {
             _logger.LogInformation($"Begining pipeline compilation in {Path.GetFullPath(directory)}");
             if(!Directory.Exists(directory)) throw new DirectoryNotFoundException("Pipeline directory must exist.");
@@ -37,7 +48,7 @@ namespace PitBoss {
             {
                 try
                 {
-                    compiledFiles.Add(CompileDefinition(file));
+                    compiledFiles.Add(await CompileDefinitionAsync(file));
                 }
                 catch(Exception e)
                 {
@@ -60,31 +71,14 @@ namespace PitBoss {
             }
             _pipelines = pipelines.SelectMany(i => i).ToList();
             _logger.LogInformation($"Successfully created {_pipelines.Count} pipelines");
+            Ready = true;
             return _pipelines;
         }
 
-        private string CompileDefinition(string location) 
+        private async Task<string> CompileDefinitionAsync(string location) 
         {
             // Build our script to a dll so it can be imported
-            // Must be done on the command line as I can't find anywhere to call this in code
-            var process = new Process()
-            {
-                StartInfo = new ProcessStartInfo {
-                    FileName = "dotnet",
-                    Arguments = $"script publish {location} -o {CompileLocation} --dll -c Release",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                }
-            };
-
-            process.Start();
-            process.WaitForExit();
-            if(process.ExitCode != 0){
-                throw new Exception($"Failed to compile {location}");
-            }
-
+            await Compilation.CompileScriptAsync(location, CompileLocation);
             return $"{CompileLocation}/{Path.GetFileNameWithoutExtension(location)}.dll";
         }
 

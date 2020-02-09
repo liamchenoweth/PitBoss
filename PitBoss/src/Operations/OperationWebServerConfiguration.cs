@@ -22,6 +22,7 @@ namespace PitBoss
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRouting();
+            services.AddSingleton<IOperationManager, DefaultOperationManager>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

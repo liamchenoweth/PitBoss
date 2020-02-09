@@ -3,6 +3,7 @@ using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -12,6 +13,8 @@ using PitBoss.Utils;
 namespace PitBoss
 {
     public class BossWebServer {
+
+        private Action<IServiceCollection> _containerManager;
 
         public BossWebServer()
         {
@@ -43,11 +46,33 @@ namespace PitBoss
                         }
                     }
                 })
+                .ConfigureServices(services => {
+                    if(_containerManager != null)
+                    {
+                        _containerManager(services);
+                    }
+                })
                 .UseStartup<BossWebServerConfiguration>()
                 .Build();
 
             host.Start();
             return host;
+        }
+
+        public BossWebServer UseContainerManager<T>() where T : class, IContainerManager
+        {
+            _containerManager = (services) => {
+                services.UseContainerManager<T>();
+            };
+            return this;
+        }
+
+        public BossWebServer UseContainerBalancer<T>() where T : class, IContainerBalancer
+        {
+            _containerManager = (services) => {
+                services.UseContainerBalancer<T>();
+            };
+            return this;
         }
 
         private void StartUp() 

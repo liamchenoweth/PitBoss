@@ -10,13 +10,19 @@ using PitBoss;
 
 namespace JobContainer
 {
-    public class Program
+    public class Job
     {
-        public static void Main(string[] args)
+        public static void Main(int port)
+        {
+            var host = StartJobServer(port);
+            host.WaitForShutdown();
+        }
+
+        public static IWebHost StartJobServer(int port)
         {
             OperationWebServer server = new OperationWebServer();
-            var host = server.StartWebHost(args);
-            host.WaitForShutdown();
+            var host = server.StartWebHost(port);
+            return host;
         }
     }
 }

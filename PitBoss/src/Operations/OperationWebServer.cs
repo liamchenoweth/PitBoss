@@ -17,7 +17,7 @@ namespace PitBoss
             StartUp();
         }
 
-        public IWebHost StartWebHost(string[] args)
+        public IWebHost StartWebHost(int port)
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile("configuration/defaultConfiguration.json", false, true)
@@ -30,17 +30,7 @@ namespace PitBoss
                 .UseConfiguration(config)
                 .UseSerilog(LoggingUtils.ConfigureSerilog())
                 .UseKestrel(options => {
-                    var urls = new List<string>();
-                    var kestrelSettings = config.GetSection("Kestrel");
-                    kestrelSettings.Bind("Urls", urls);
-                    foreach(var url in urls){
-                        Uri uri = new Uri(url);
-                        if(uri.Host == "localhost"){
-                            options.ListenLocalhost(uri.Port);
-                        }else {
-                            options.Listen(IPAddress.Parse(uri.Host), uri.Port);
-                        }
-                    }
+                    options.ListenLocalhost(port);
                 })
                 .UseStartup<OperationWebServerConfiguration>()
                 .Build();

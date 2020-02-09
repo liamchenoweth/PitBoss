@@ -9,7 +9,7 @@ namespace PitBoss {
         }
 
         [HttpPost("operation/script")]
-        public ActionResult RecieveScript(List<IFormFile> executiondll) {
+        public ActionResult RecieveScript(List<IFormFile> executionScript) {
 
             return Ok();
         }
@@ -21,6 +21,11 @@ namespace PitBoss {
 
         [HttpGet("operation/status")]
         public OperationStatus RequestStatus() {
+            return new OperationStatus();
+        }
+
+        [HttpGet("operation/status")]
+        public OperationStatus RequestStatus(string requestId) {
             return new OperationStatus();
         }
     }

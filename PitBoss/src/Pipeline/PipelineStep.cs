@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace PitBoss {
     public abstract class PipelineStep {
-        protected string _name;
+        public string Name {get; protected set;}
     }
 
     public class PipelineStep<InArg, OutArg> : PipelineStep {
 
         public PipelineStep(string script_name) {
-            _name = script_name;
+            Name = script_name;
         }
     }
 

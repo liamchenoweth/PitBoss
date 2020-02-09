@@ -1,12 +1,14 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PitBoss {
     public interface IPipelineManager
     {
-        List<Pipeline> Pipelines { get; }
-        List<Pipeline> CompilePipelines(string directory);
+        bool Ready { get; }
+        IEnumerable<Pipeline> Pipelines { get; }
+        IEnumerable<Pipeline> CompilePipelines(string directory);
+        Task<IEnumerable<Pipeline>> CompilePipelinesAsync(string directory);
         Pipeline GetPipeline(string name);
-
-        
+        //PipelineStep GetPipelineStep(string pipeline, string pipelineName);
     }
 }
