@@ -17,10 +17,8 @@ namespace PitBoss
         bool Ready {get;}
         IEnumerable<IOperationGroup> GetContainers();
         Task<IEnumerable<IOperationGroup>> GetContainersAsync();
-        IOperationContainer CreateContainer(PipelineStep step);
-        Task<IOperationContainer> CreateContainerAsync(PipelineStep step);
-        void DestroyContainer(IOperationContainer container);
-        Task DestroyContainerAsync(IOperationContainer container);
+        void RegisterGroup(IOperationGroup group);
+        Task RegisterGroupAsync(IOperationGroup group);
         IOperationGroup GetContainersByStep(PipelineStep step);
         Task<IOperationGroup> GetContainersByStepAsync(PipelineStep step);
         void DiscoverContainers();

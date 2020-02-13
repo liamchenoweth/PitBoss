@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
@@ -8,16 +9,19 @@ namespace PitBoss
         private IContainerManager _containerManager;
         private IPipelineManager _pipelineManager;
         private ILogger _logger;
+        private IHttpClientFactory _factory;
 
         public DefaultContainerBalancer(
             IContainerManager containerManager,
             IPipelineManager pipelineManager,
+            IHttpClientFactory factory,
             ILogger logger
         )
         {
             _containerManager = containerManager;
             _pipelineManager = pipelineManager;
             _logger = logger;
+            _factory = factory;
         }
 
         public void BalanceGroup(IOperationGroup group)
@@ -27,11 +31,14 @@ namespace PitBoss
 
         public async Task BalanceGroupAsync(IOperationGroup group)
         {
-            if(!_pipelineManager.Ready)
+            var currentCount = await group.CurrentSizeAsync();
+            if(currentCount < group.TargetSize)
             {
-                _logger.LogWarning("Pipelines not yet compiled, cannot balance containers");
+                for(var x = currentCount; x < group.TargetSize; x++)
+                {
+                    group.AddContainer(new DefaultOperationContainer(group.PipelineStep, _factory));
+                }
             }
-            
         }
     }
 }

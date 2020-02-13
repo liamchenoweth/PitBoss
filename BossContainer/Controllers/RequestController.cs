@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace PitBoss {
     public class RequestController : Controller {
-        private IRequestManager _requestManager;
-        public RequestController(IRequestManager requestManager){
+        private IPipelineRequestManager _requestManager;
+        public RequestController(IPipelineRequestManager requestManager){
             _requestManager = requestManager;
         }
 

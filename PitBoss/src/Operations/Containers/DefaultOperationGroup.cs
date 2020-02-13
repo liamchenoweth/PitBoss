@@ -8,11 +8,67 @@ namespace PitBoss
     public class DefaultOperationGroup : IOperationGroup
     {
         public PipelineStep PipelineStep {get; private set;}
+        public int TargetSize {get; private set;}
         private List<IOperationContainer> _containers;
+
+        public DefaultOperationGroup(PipelineStep step)
+        {
+            PipelineStep = step;
+            TargetSize = 1; // TODO: inform this from the step / config
+            _containers = new List<IOperationContainer>();
+        }
 
         public void SendRequest(OperationRequest request)
         {
             SendRequestAsync(request).RunSynchronously();
+        }
+
+        public int CurrentSize()
+        {
+            var task = CurrentSizeAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<int> CurrentSizeAsync()
+        {
+            return _containers.Count;
+        }
+
+        public IEnumerable<IOperationContainer> GetHealthyContainers()
+        {
+            var task = GetHealthyContainersAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<IEnumerable<IOperationContainer>> GetHealthyContainersAsync()
+        {
+            var healthy = new List<IOperationContainer>();
+            foreach(var container in _containers)
+            {
+                var status = await container.GetStatusAsync();
+                if(status.Healthy) healthy.Add(container);
+            }
+            return healthy;
+        }
+
+        public IEnumerable<IOperationContainer> GetUnhealthyContainers()
+        {
+            var task = GetUnhealthyContainersAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<IEnumerable<IOperationContainer>> GetUnhealthyContainersAsync()
+        {
+            var unhealthy = new List<IOperationContainer>();
+            foreach(var container in _containers)
+            {
+                var status = await container.GetStatusAsync();
+                if(!status.Healthy) unhealthy.Add(container);
+            }
+            return unhealthy;
         }
 
         public async Task SendRequestAsync(OperationRequest request)
