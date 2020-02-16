@@ -10,12 +10,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Extensions.Logging;
+using PitBoss.Utils;
 
 namespace PitBoss
 {
     public class BossWebServerConfiguration {
         private IConfiguration _config;
-        private ILogger _logger;
 
         public BossWebServerConfiguration(IConfiguration config) {
             _config = config;
@@ -23,10 +25,30 @@ namespace PitBoss
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddRouting();
+            var providers = new LoggerProviderCollection();
+
+            Log.Logger = LoggingUtils.ConfigureSerilog();
+
             services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
+            services.AddSingleton<IDistributedService, MemoryDistributedService>();
+            services.AddSingleton(providers);
+            services.AddSingleton<ILoggerFactory>(sc => {
+                var providerCollection = sc.GetService<LoggerProviderCollection>();
+                var factory = new SerilogLoggerFactory(null, true, providerCollection);
+
+                foreach (var provider in sc.GetServices<ILoggerProvider>())
+                    factory.AddProvider(provider);
+
+                return factory;
+            });
+
             services.AddTransient<IPipelineRequestManager, DefaultPipelineRequestManager>();
             services.AddTransient<IOperationRequestManager, DefaultOperationRequestManager>();
+
+            services.AddRouting();
+            services.AddHttpClient();
+            services.AddDbContext<BossContext>();
+            services.AddLogging(l => l.AddConsole());
             // Hosted Services
             services.AddHostedService<OperationService>();
             services.AddHostedService<ContainerService>();

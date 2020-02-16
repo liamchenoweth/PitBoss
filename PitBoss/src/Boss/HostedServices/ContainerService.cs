@@ -3,18 +3,19 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Threading;
+using Serilog;
 
 namespace PitBoss
 {
-    public class ContainerService : IHostedService
+    public class ContainerService : BackgroundService
     {
         private IContainerManager _containerManager;
         private IContainerBalancer _containerBalancer;
         private IPipelineManager _pipelineManager;
-        private ILogger _logger;
+        private ILogger<ContainerService> _logger;
 
         public ContainerService(
-            ILogger logger,
+            ILogger<ContainerService> logger,
             IContainerManager containerManager,
             IContainerBalancer containerBalancer,
             IPipelineManager pipelineManager)
@@ -25,7 +26,7 @@ namespace PitBoss
             _pipelineManager = pipelineManager;
         }
 
-        public async Task StartAsync(CancellationToken token)
+        protected async override Task ExecuteAsync(CancellationToken cancelationToken)
         {
             while(!_pipelineManager.Ready)
             {
@@ -45,7 +46,8 @@ namespace PitBoss
             // Should we clean up containers if we are the only boss and just starting?
             // Idea: make configurable if cleanup should occur
             // Idea: make containers have a timeout on heartbeat
-            while(!token.IsCancellationRequested)
+            _logger.LogInformation("Begin balancing containers");
+            while(!cancelationToken.IsCancellationRequested)
             {
                 
                 await _containerManager.DiscoverContainersAsync();
@@ -59,12 +61,8 @@ namespace PitBoss
 
                 await Task.Delay(5000); // TODO: make this configurable
             }
-        }
 
-        public async Task StopAsync(CancellationToken token)
-        {
-            // Check if other bosses exist
-            // Shut down containers if last boss
+            // Shutdown tasks here
         }
     }
 }

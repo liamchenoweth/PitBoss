@@ -5,20 +5,20 @@ using System.Threading.Tasks;
 using System.Threading;
 
 namespace PitBoss {
-    public class OperationService : IHostedService {
+    public class OperationService : BackgroundService {
 
         private IPipelineManager _pipelineManager;
         private IConfiguration _configuration;
         private IContainerManager _containerManager;
         private IOperationRequestManager _operationRequestManager;
-        private ILogger _logger;
+        private ILogger<OperationService> _logger;
 
         public OperationService(
             IPipelineManager pipelineManager, 
             IConfiguration configuration, 
             IContainerManager containerManager,
             IOperationRequestManager operationRequestManager,
-            ILogger logger) 
+            ILogger<OperationService> logger) 
         {
             _pipelineManager = pipelineManager;
             _configuration = configuration;
@@ -27,7 +27,7 @@ namespace PitBoss {
             _logger = logger;
         }
 
-        public async Task StartAsync(CancellationToken cancelationToken)
+        protected async override Task ExecuteAsync(CancellationToken cancelationToken)
         {
             // Compile pipelines
             await _pipelineManager.CompilePipelinesAsync(_configuration["Boss:Scripts:Location"]);
@@ -39,6 +39,7 @@ namespace PitBoss {
                 _logger.LogInformation("Waiting for containers to be discovered");
                 await Task.Delay(5000); // TODO: Maybe make this configurable
             }
+            _logger.LogInformation("Begin waiting for incoming requests");
             while(!cancelationToken.IsCancellationRequested)
             {
                 // Just keep polling, polling, polling...
@@ -74,13 +75,8 @@ namespace PitBoss {
                     }
                 }
             }
-        }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            // Poll for other Bosses
-            // Shutdown or hand off existing containers
-            // Shutdown boss
+            // Do our shutdown tasks
         }
     }
 }

@@ -13,7 +13,7 @@ namespace PitBoss {
     public class DefaultPipelineManager : IPipelineManager {
         // TODO: move this to config
         private const string CompileLocation = "compiled";
-        private ILogger _logger;
+        private ILogger<IPipelineManager> _logger;
         private List<Pipeline> _pipelines;
 
         public DefaultPipelineManager(ILogger<IPipelineManager> logger) {
@@ -48,7 +48,9 @@ namespace PitBoss {
             {
                 try
                 {
+                    _logger.LogInformation($"Compiling {file}");
                     compiledFiles.Add(await CompileDefinitionAsync(file));
+                    _logger.LogInformation("Finished compilation");
                 }
                 catch(Exception e)
                 {

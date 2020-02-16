@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +15,9 @@ namespace PitBoss
 {
     public class BossWebServer {
 
+        private Assembly _callingAssembly;
         private Action<IServiceCollection> _containerManager;
+        private Action<IServiceCollection> _containerBalancer;
 
         public BossWebServer()
         {
@@ -23,6 +26,7 @@ namespace PitBoss
 
         public IWebHost StartWebHost(string[] args)
         {
+            _callingAssembly = Assembly.GetCallingAssembly();
             var config = new ConfigurationBuilder()
                 .AddJsonFile("configuration/defaultConfiguration.json", false, true)
                 // Allow provided configuration from user
@@ -47,9 +51,18 @@ namespace PitBoss
                     }
                 })
                 .ConfigureServices(services => {
+                    
+                    var mvcOptions = services.AddControllers();
+                    mvcOptions.PartManager.ApplicationParts.Clear();
+                    mvcOptions.AddApplicationPart(_callingAssembly);
+
                     if(_containerManager != null)
                     {
                         _containerManager(services);
+                    }
+                    if(_containerBalancer != null)
+                    {
+                        _containerBalancer(services);
                     }
                 })
                 .UseStartup<BossWebServerConfiguration>()
@@ -69,7 +82,7 @@ namespace PitBoss
 
         public BossWebServer UseContainerBalancer<T>() where T : class, IContainerBalancer
         {
-            _containerManager = (services) => {
+            _containerBalancer = (services) => {
                 services.UseContainerBalancer<T>();
             };
             return this;

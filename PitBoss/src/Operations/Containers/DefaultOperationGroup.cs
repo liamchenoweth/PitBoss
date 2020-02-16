@@ -138,11 +138,23 @@ namespace PitBoss
 
         public void AddContainer(IOperationContainer container)
         {
+            AddContainerAsync(container).RunSynchronously();
+        }
+
+        public async Task AddContainerAsync(IOperationContainer container)
+        {
+            await container.SendOperationAsync(PipelineStep.Name);
             _containers.Add(container);
         }
 
         public void RemoveContainer(IOperationContainer container)
         {
+            RemoveContainerAsync(container).RunSynchronously();
+        }
+
+        public async Task RemoveContainerAsync(IOperationContainer container)
+        {
+            await container.SendShutdownAsync();
             _containers.Remove(container);
         }
     }

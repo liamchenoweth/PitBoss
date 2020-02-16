@@ -17,6 +17,8 @@ namespace PitBoss
         Task<OperationGroupStatus> GetGroupHealthAsync();
         void AddContainer(IOperationContainer container);
         void RemoveContainer(IOperationContainer container);
+        Task AddContainerAsync(IOperationContainer container);
+        Task RemoveContainerAsync(IOperationContainer container);
         IEnumerable<IOperationContainer> GetHealthyContainers();
         Task<IEnumerable<IOperationContainer>> GetHealthyContainersAsync();
         IEnumerable<IOperationContainer> GetUnhealthyContainers();

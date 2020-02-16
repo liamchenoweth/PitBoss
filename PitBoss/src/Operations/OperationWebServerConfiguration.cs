@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Extensions.Logging;
+using PitBoss.Utils;
 
 namespace PitBoss
 {
@@ -21,13 +26,31 @@ namespace PitBoss
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var providers = new LoggerProviderCollection();
+
+            Log.Logger = LoggingUtils.ConfigureSerilog();
+
             services.AddRouting();
             services.AddSingleton<IOperationManager, DefaultOperationManager>();
+            services.AddSingleton(providers);
+            services.AddSingleton<ILoggerFactory>(sc => {
+                var providerCollection = sc.GetService<LoggerProviderCollection>();
+                var factory = new SerilogLoggerFactory(null, true, providerCollection);
+
+                foreach (var provider in sc.GetServices<ILoggerProvider>())
+                    factory.AddProvider(provider);
+
+                return factory;
+            });
+            
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
+            });
         }
     }
 }

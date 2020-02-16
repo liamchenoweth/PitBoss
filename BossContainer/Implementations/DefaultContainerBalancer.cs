@@ -8,14 +8,14 @@ namespace PitBoss
     {
         private IContainerManager _containerManager;
         private IPipelineManager _pipelineManager;
-        private ILogger _logger;
+        private ILogger<IContainerBalancer> _logger;
         private IHttpClientFactory _factory;
 
         public DefaultContainerBalancer(
             IContainerManager containerManager,
             IPipelineManager pipelineManager,
             IHttpClientFactory factory,
-            ILogger logger
+            ILogger<IContainerBalancer> logger
         )
         {
             _containerManager = containerManager;

@@ -1,8 +1,10 @@
 using System;
 using System.Net;
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Text.Json;
 using Serilog;
@@ -12,6 +14,8 @@ namespace PitBoss
 {
     public class OperationWebServer {
 
+        private Assembly _callingAssembly;
+
         public OperationWebServer()
         {
             StartUp();
@@ -19,6 +23,7 @@ namespace PitBoss
 
         public IWebHost StartWebHost(int port)
         {
+            _callingAssembly = Assembly.GetCallingAssembly();
             var config = new ConfigurationBuilder()
                 .AddJsonFile("configuration/defaultConfiguration.json", false, true)
                 // Allow provided configuration from user
@@ -30,7 +35,12 @@ namespace PitBoss
                 .UseConfiguration(config)
                 .UseSerilog(LoggingUtils.ConfigureSerilog())
                 .UseKestrel(options => {
-                    options.ListenLocalhost(port);
+                    options.Listen(new IPAddress(new byte[] {127,0,0,1}), port);
+                })
+                .ConfigureServices(services => {
+                    var mvcOptions = services.AddControllers();
+                    mvcOptions.PartManager.ApplicationParts.Clear();
+                    mvcOptions.AddApplicationPart(_callingAssembly);
                 })
                 .UseStartup<OperationWebServerConfiguration>()
                 .Build();
