@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace PitBoss
 {
@@ -16,6 +17,7 @@ namespace PitBoss
         private ContainerStatus[] HealthyStatus = { ContainerStatus.Ready, ContainerStatus.Processing, ContainerStatus.Waiting };
         public ContainerStatus ContainerStatus { get; set; }
 
+        [JsonIgnore]
         public bool Healthy {
             get
             {

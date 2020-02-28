@@ -17,12 +17,7 @@ namespace PitBoss {
         }
 
         [HttpPost("request")]
-        public ActionResult RequestJob(string pipelineName) {
-            var request = new PipelineRequest
-            {
-                PipelineName = pipelineName
-            };
-
+        public ActionResult RequestJob([FromBody]PipelineRequest request) {
             _requestManager.QueueRequest(request);
             return Ok(request);
         }

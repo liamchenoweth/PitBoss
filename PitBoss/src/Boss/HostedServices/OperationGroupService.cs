@@ -5,20 +5,20 @@ using System.Threading.Tasks;
 using System.Threading;
 
 namespace PitBoss {
-    public class OperationService : BackgroundService {
+    public class OperationGroupService : BackgroundService {
 
         private IPipelineManager _pipelineManager;
         private IConfiguration _configuration;
         private IContainerManager _containerManager;
         private IOperationRequestManager _operationRequestManager;
-        private ILogger<OperationService> _logger;
+        private ILogger<OperationGroupService> _logger;
 
-        public OperationService(
+        public OperationGroupService(
             IPipelineManager pipelineManager, 
             IConfiguration configuration, 
             IContainerManager containerManager,
             IOperationRequestManager operationRequestManager,
-            ILogger<OperationService> logger) 
+            ILogger<OperationGroupService> logger) 
         {
             _pipelineManager = pipelineManager;
             _configuration = configuration;
@@ -30,7 +30,7 @@ namespace PitBoss {
         protected async override Task ExecuteAsync(CancellationToken cancelationToken)
         {
             // Compile pipelines
-            await _pipelineManager.CompilePipelinesAsync(_configuration["Boss:Scripts:Location"]);
+            await _pipelineManager.CompilePipelinesAsync(_configuration["Boss:Pipelines:Location"]);
             // Poll for new containers
             // await _containerManager.DiscoverContainersAsync();
             // wait for ContainerService to discover containers
@@ -74,8 +74,9 @@ namespace PitBoss {
                         }
                     }
                 }
+                await Task.Delay(5000);
             }
-
+            _logger.LogInformation("Shutting down the Operation service");
             // Do our shutdown tasks
         }
     }

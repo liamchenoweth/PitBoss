@@ -96,7 +96,6 @@ namespace PitBoss {
             // Finally set the DLL location so we can send it off to the workers
             var types = dll.GetTypes().Where(x => typeof(IPipelineBuilder).IsAssignableFrom(x));
             if(types.Count() == 0) throw new Exception($"No types that implement IPipelineBuilder found in {location}");
-            var test = types.Select(x => Activator.CreateInstance(x)).ToList();
             var buidlers = types.Select(x => Activator.CreateInstance(x) as IPipelineBuilder).Where(x => x != null).ToList();
             var pipelines = buidlers.Select(x => x.Build()).ToList();
             pipelines.ForEach(x => x.DllLocation = location);

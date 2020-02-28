@@ -47,7 +47,7 @@ namespace PitBoss
             var healthy = new List<IOperationContainer>();
             foreach(var container in _containers)
             {
-                var status = await container.GetStatusAsync();
+                var status = await container.GetContainerStatusAsync();
                 if(status.Healthy) healthy.Add(container);
             }
             return healthy;
@@ -65,7 +65,7 @@ namespace PitBoss
             var unhealthy = new List<IOperationContainer>();
             foreach(var container in _containers)
             {
-                var status = await container.GetStatusAsync();
+                var status = await container.GetContainerStatusAsync();
                 if(!status.Healthy) unhealthy.Add(container);
             }
             return unhealthy;
@@ -75,7 +75,7 @@ namespace PitBoss
         {
             foreach(var container in _containers)
             {
-                var status = await container.GetStatusAsync();
+                var status = await container.GetContainerStatusAsync();
                 if(status.ContainerStatus == ContainerStatus.Ready)
                 {
                     await container.SendRequestAsync(request);
@@ -97,7 +97,7 @@ namespace PitBoss
             var statuses = new List<OperationStatus>();
             foreach(var container in _containers)
             {
-                statuses.Add(await container.GetStatusAsync());
+                statuses.Add(await container.GetContainerStatusAsync());
             }
             return statuses.Where(x => x != null);
         }
@@ -114,7 +114,7 @@ namespace PitBoss
             var health = new List<OperationStatus>();
             foreach(var container in _containers)
             {
-                health.Add(await container.GetStatusAsync());
+                health.Add(await container.GetContainerStatusAsync());
             }
             return new OperationGroupStatus
             {

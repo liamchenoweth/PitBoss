@@ -61,7 +61,7 @@ namespace PitBoss
 
                 await Task.Delay(5000); // TODO: make this configurable
             }
-
+            _logger.LogInformation("Shutting down the Container service");
             // Shutdown tasks here
         }
     }

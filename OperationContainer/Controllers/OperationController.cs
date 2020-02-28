@@ -1,32 +1,55 @@
+using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 
 namespace PitBoss {
     public class OperationController : Controller {
-        public OperationController() {
-
+        private IWebHostEnvironment _host;
+        private IOperationManager _operationManager;
+        private IOperationHealthManager _healthManager;
+        public OperationController(IWebHostEnvironment host, IOperationManager operationManager, IOperationHealthManager healthManager) {
+            _host = host;
+            _operationManager = operationManager;
+            _healthManager = healthManager;
         }
 
         [HttpPost("operation/script")]
-        public ActionResult RecieveScript(List<IFormFile> executionScript) {
-
+        public async Task<ActionResult> RecieveScript(List<IFormFile> executionScript) 
+        {
+            var baseLocation = "OperationContainer/scripts";
+            Directory.CreateDirectory(baseLocation);
+            foreach(var file in executionScript)
+            {
+                if(file.Length > 0)
+                {
+                    using(var fileStream = new FileStream($"{baseLocation}/{file.FileName}", FileMode.Create))
+                    {
+                        await file.CopyToAsync(fileStream);
+                    }
+                    await _operationManager.CompileOperationAsync($"{baseLocation}/{file.FileName}");
+                }
+            }
             return Ok();
         }
 
         [HttpPost("operation/request")]
-        public OperationStatus RequestOperation(OperationRequest request) {
-            return new OperationStatus();
+        public OperationRequestStatus RequestOperation(OperationRequest request) 
+        {
+            _operationManager.QueueRequest(request);
+            return _healthManager.GetOperationStatus(request);
         }
 
         [HttpGet("operation/status")]
-        public OperationStatus RequestStatus() {
-            return new OperationStatus();
-        }
-
-        [HttpGet("operation/status")]
-        public OperationStatus RequestStatus(string requestId) {
-            return new OperationStatus();
+        public ActionResult RequestStatus(string requestId) 
+        {
+            if(requestId == null) return BadRequest("No request id given");
+            var status = _healthManager.GetOperationStatus(requestId);
+            if(status == null) return NotFound();
+            return Ok(status);
         }
     }
 }

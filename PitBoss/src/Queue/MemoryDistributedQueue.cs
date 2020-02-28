@@ -10,7 +10,7 @@ namespace PitBoss
     {
         private ConcurrentQueue<string> _queue;
 
-        public MemoryDistributedQueue(ConcurrentQueue<string> queue)
+        public MemoryDistributedQueue(ref ConcurrentQueue<string> queue)
         {
             _queue = queue;
         }
@@ -22,7 +22,8 @@ namespace PitBoss
 
         public void PushFront(T obj)
         {
-            _queue = new ConcurrentQueue<string>(_queue.Prepend(JsonSerializer.Serialize(obj)));
+            
+            _queue.Enqueue(JsonSerializer.Serialize(obj));
         }
 
         public T Pop()
@@ -33,10 +34,7 @@ namespace PitBoss
 
         public T PopBack()
         {
-            if(_queue.Count() == 0) return default(T);
-            var obj = _queue.Last();
-            _queue = new ConcurrentQueue<string>(_queue.Take(_queue.Count() - 1));
-            return JsonSerializer.Deserialize<T>(obj);
+            throw new NotImplementedException("Current implementation does not allow this");
         }
 
         public IEnumerable<T> All 

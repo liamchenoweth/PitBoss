@@ -19,5 +19,22 @@ namespace PitBoss {
     public class OperationRequest<T> : OperationRequest 
     {    
         public T Parameter {get; set;}
+        public OperationRequest() {}
+        public OperationRequest(OperationRequest request, T parameter)
+        {
+            Parameter = parameter;
+            Id = request.Id;
+            PipelineName = request.PipelineName;
+            PipelineId = request.PipelineId;
+            PipelineStepId = request.PipelineStepId;
+            CallbackUri = request.CallbackUri;
+            Status = request.Status;
+        }
+    }
+
+    public class OperationRequestStatus
+    {
+        public string RequestId {get; set;}
+        public RequestStatus Status {get;set;}
     }
 }

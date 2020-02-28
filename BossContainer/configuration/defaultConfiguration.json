@@ -5,9 +5,17 @@
         ]
     },
     "Boss": {
+        "Pipelines":
+        {
+            "Location": "scripts/pipelines"
+        },
         "Scripts":
         {
-            "Location": "scripts"
+            "Location": "scripts/steps"
+        },
+        "Database":
+        {
+            "ConnectionString": "Data Source=database.db"
         }
     }   
 }

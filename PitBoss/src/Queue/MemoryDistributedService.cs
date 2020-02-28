@@ -19,7 +19,8 @@ namespace PitBoss
         public IDistributedQueue<T> GetQueue<T>(string queue)
         {
             if(!_queues.ContainsKey(queue)) _queues[queue] = new ConcurrentQueue<string>();
-            return new MemoryDistributedQueue<T>(_queues[queue]);
+            var queueRef = _queues[queue];
+            return new MemoryDistributedQueue<T>(ref queueRef);
         }
 
         public IDistributedCache GetCache()

@@ -25,7 +25,7 @@ namespace JobContainer
             OperationWebServer server = new OperationWebServer();
             var host = server.StartWebHost(port);
             var logger = host.Services.GetService<ILogger<Job>>();
-            logger.LogInformation($"Starting new job server on port: {host.ServerFeatures.Get<IServerAddressesFeature>().Addresses.FirstOrDefault()}");
+            logger.LogInformation($"Starting new job server on url: {host.ServerFeatures.Get<IServerAddressesFeature>().Addresses.FirstOrDefault()}");
             return host;
         }
     }

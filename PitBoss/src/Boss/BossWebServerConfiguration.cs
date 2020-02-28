@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Extensions.Logging;
 using PitBoss.Utils;
@@ -50,13 +51,16 @@ namespace PitBoss
             services.AddDbContext<BossContext>();
             services.AddLogging(l => l.AddConsole());
             // Hosted Services
-            services.AddHostedService<OperationService>();
+            services.AddHostedService<OperationGroupService>();
             services.AddHostedService<ContainerService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseRouting();
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
+            });
         }
     }
 }

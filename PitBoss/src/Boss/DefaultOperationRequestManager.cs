@@ -69,7 +69,8 @@ namespace PitBoss {
 
         public void ReturnRequest(OperationRequest request)
         {
-            var requestString = $"{CachePrefix}:{request.PipelineName}";
+            var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[request.PipelineStepId];
+            var requestString = $"{CachePrefix}:{step.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             queue.PushFront(request);
             var dbRequest = _db.OperationRequests.Where(x => x.Id == request.Id).FirstOrDefault();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -31,6 +32,7 @@ namespace PitBoss
             Log.Logger = LoggingUtils.ConfigureSerilog();
 
             services.AddRouting();
+            services.AddSingleton<IOperationHealthManager, DefaultOperationHealthManager>();
             services.AddSingleton<IOperationManager, DefaultOperationManager>();
             services.AddSingleton(providers);
             services.AddSingleton<ILoggerFactory>(sc => {
@@ -42,7 +44,10 @@ namespace PitBoss
 
                 return factory;
             });
-            
+            services.AddHttpClient();
+            services.AddHostedService<OperationService>();
+            services.AddControllers()
+            .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

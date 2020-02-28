@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Text.Json;
+using System.Reflection;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Distributed;
 using PitBoss.Extensions;
@@ -7,26 +9,39 @@ using PitBoss.Extensions;
 namespace PitBoss {
     public class DefaultPipelineRequestManager : IPipelineRequestManager {
         private IDistributedService _memoryService;
+        private IPipelineManager _pipelineManager;
         private BossContext _db;
 
-        public DefaultPipelineRequestManager(IDistributedService memoryService, BossContext db)
+        public DefaultPipelineRequestManager(IDistributedService memoryService, BossContext db, IPipelineManager pipelineManager)
         {
             _memoryService = memoryService;
+            _pipelineManager = pipelineManager;
             _db = db;
         }
 
         public void QueueRequest(PipelineRequest request) 
         {
-            var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{request.PipelineName}";
+            var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[0];
+            var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{step.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             var operation = new OperationRequest(request, 0);
             // TODO: set this correctly
             operation.CallbackUri = "localhost:4000";
             operation.Status = RequestStatus.Pending;
             request.Status = RequestStatus.Pending;
-            queue.Push(operation);
+            OperationRequest genericOperation = operation;
+            if(!string.IsNullOrEmpty(request.Input))
+            {
+                var stepType = step.GetType().GetGenericArguments()[0];
+                var input = JsonSerializer.Deserialize(request.Input, stepType);
+                var operationRequestType = typeof(OperationRequest<>).MakeGenericType(stepType);
+                genericOperation = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {operation, input});
+            }
+            Console.WriteLine(JsonSerializer.Serialize(genericOperation));
             _db.PipelineRequests.Add(request);
+            genericOperation.PipelineId = request.Id;
             _db.SaveChanges();
+            queue.Push(genericOperation);
         }
 
         public void FinishRequest(OperationResponse response)

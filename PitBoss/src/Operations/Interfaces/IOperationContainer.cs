@@ -20,10 +20,10 @@ namespace PitBoss
         Task<bool> SendShutdownAsync();
         void ForceShutdown();
         Task ForceShutdownAsync();
-        OperationStatus GetStatus();
-        Task<OperationStatus> GetStatusAsync();
-        OperationStatus GetStatus(OperationRequest request);
-        Task<OperationStatus> GetStatusAsync(OperationRequest request);
+        OperationStatus GetContainerStatus();
+        Task<OperationStatus> GetContainerStatusAsync();
+        OperationRequestStatus GetRequestStatus(OperationRequest request);
+        Task<OperationRequestStatus> GetRequestStatusAsync(OperationRequest request);
     }
     
 }
