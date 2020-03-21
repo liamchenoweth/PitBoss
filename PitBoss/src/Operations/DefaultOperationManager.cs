@@ -15,8 +15,8 @@ namespace PitBoss {
     {
         private Dictionary<string, OperationRequest> _previousRequests;
         private Delegate _operation;
-        private Type _parameterType;
-        private Type _outputType;
+        public Type InputType {get; private set;}
+        public Type OutputType {get; private set;}
         private const string CompilationOutput = "compiled";
         private const string ResponseUri = "operation/result";
         private IHttpClientFactory _clientFactory;
@@ -50,7 +50,7 @@ namespace PitBoss {
 
         public OperationRequest DeserialiseRequest(string requestJson)
         {
-            var deserialiseType = typeof(OperationRequest<>).MakeGenericType(_parameterType);
+            var deserialiseType = typeof(OperationRequest<>).MakeGenericType(InputType);
             OperationRequest request = (OperationRequest) JsonSerializer.Deserialize(requestJson, deserialiseType);
             return request;
         }
@@ -64,7 +64,7 @@ namespace PitBoss {
 
         public async Task<OperationRequest> DeserialiseRequestAsync(Stream requestJson)
         {
-            var deserialiseType = typeof(OperationRequest<>).MakeGenericType(_parameterType);
+            var deserialiseType = typeof(OperationRequest<>).MakeGenericType(InputType);
             OperationRequest request = (OperationRequest)(await JsonSerializer.DeserializeAsync(requestJson, deserialiseType));
             return request;
         }
@@ -86,15 +86,16 @@ namespace PitBoss {
         public async Task FinishRequestAsync(OperationRequest request, object output)
         {
             // Get our specific response generic type
-            var respType = typeof(OperationResponse<>).MakeGenericType(_outputType);
+            var respType = typeof(OperationResponse<>).MakeGenericType(OutputType);
             // Create our response from our request
             var response = (OperationResponse) Activator.CreateInstance(respType, new object[] { request });
             // Set our result
             // This will throw an error if the output is not the correct type
             response.GetType().GetProperty("Result").GetSetMethod().Invoke(response, new object[] { output });
+            response.Success = true;
             var client = _clientFactory.CreateClient();
             var content = new StringContent(JsonSerializer.Serialize(response, respType), Encoding.UTF8, "application/json");
-            var postResp = await client.PostAsync($"{request.CallbackUri}/{ResponseUri}", content);
+            var postResp = await client.PostAsync($"http://{request.CallbackUri}/{ResponseUri}", content);
             // TODO: do some error checking / retrying here
             _healthManager.FinishActiveOperation(request);
         }
@@ -120,19 +121,19 @@ namespace PitBoss {
             var inter = type.GetInterfaces().Where(i => i.IsGenericType).First();
             var generics = inter.GetGenericArguments();
             if(generics.Count() == 0) throw new Exception($"Unable to determine input type for {location}");
-            _parameterType = generics[0];
+            InputType = generics[0];
             if(generics.Count() == 1)
             {
-                _outputType = null;
+                OutputType = null;
             }
             else
             {
-                _outputType = generics[1];
+                OutputType = generics[1];
             }
             var op = Activator.CreateInstance(type) as IOperation;
             if(op == null) throw new Exception($"Unable to cast object found in {location} to IOperation");
-            var typeArgs = new List<Type>() {_parameterType};
-            if(_outputType != null) typeArgs.Add(_outputType);
+            var typeArgs = new List<Type>() {InputType};
+            if(OutputType != null) typeArgs.Add(OutputType);
             var delegateType = Expression.GetFuncType(typeArgs.ToArray());
             // TODO: this could end up holding memory it shouldn't
             // For now it's fine, but should come back to this and invoke a new object each time

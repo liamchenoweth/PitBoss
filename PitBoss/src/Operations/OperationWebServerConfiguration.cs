@@ -46,8 +46,11 @@ namespace PitBoss
             });
             services.AddHttpClient();
             services.AddHostedService<OperationService>();
-            services.AddControllers()
-            .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+            services.AddControllers().AddNewtonsoftJson()
+            .AddJsonOptions(opts => {
+                opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

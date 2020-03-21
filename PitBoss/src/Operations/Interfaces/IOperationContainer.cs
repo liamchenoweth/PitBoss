@@ -24,6 +24,8 @@ namespace PitBoss
         Task<OperationStatus> GetContainerStatusAsync();
         OperationRequestStatus GetRequestStatus(OperationRequest request);
         Task<OperationRequestStatus> GetRequestStatusAsync(OperationRequest request);
+        OperationDescription GetDescription();
+        Task<OperationDescription> GetDescriptionAsync();
     }
     
 }

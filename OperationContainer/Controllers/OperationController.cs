@@ -1,5 +1,6 @@
+using System;
 using System.IO;
-using System.Reflection;
+using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,11 @@ namespace PitBoss {
         private IWebHostEnvironment _host;
         private IOperationManager _operationManager;
         private IOperationHealthManager _healthManager;
-        public OperationController(IWebHostEnvironment host, IOperationManager operationManager, IOperationHealthManager healthManager) {
+        public OperationController(
+            IWebHostEnvironment host, 
+            IOperationManager operationManager, 
+            IOperationHealthManager healthManager
+        ) {
             _host = host;
             _operationManager = operationManager;
             _healthManager = healthManager;
@@ -37,8 +42,10 @@ namespace PitBoss {
         }
 
         [HttpPost("operation/request")]
-        public OperationRequestStatus RequestOperation(OperationRequest request) 
+        public OperationRequestStatus RequestOperation([FromBody]JObject jrequest) 
         {
+            var requestType = typeof(OperationRequest<>).MakeGenericType(new Type[] {_operationManager.InputType});
+            var request = (OperationRequest)jrequest.ToObject(requestType);
             _operationManager.QueueRequest(request);
             return _healthManager.GetOperationStatus(request);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 
+using PitBoss.Utils;
 namespace PitBoss
 {
     public class DefaultOperationGroup : IOperationGroup
@@ -33,6 +34,18 @@ namespace PitBoss
         public async Task<int> CurrentSizeAsync()
         {
             return _containers.Count;
+        }
+
+        public IEnumerable<IOperationContainer> GetContainers()
+        {
+            var task = GetContainersAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<IEnumerable<IOperationContainer>> GetContainersAsync()
+        {
+            return _containers;
         }
 
         public IEnumerable<IOperationContainer> GetHealthyContainers()
@@ -116,13 +129,22 @@ namespace PitBoss
             {
                 health.Add(await container.GetContainerStatusAsync());
             }
+            var groupHealth = Health.Unknown;
+            var healthy = health.Where(x => x.Healthy).Count();
+            var unhealthy = (_containers.Count - healthy);
+            var ready = health.Where(x => x.ContainerStatus == ContainerStatus.Ready).Count();
+            var processing = health.Where(x => x.ContainerStatus == ContainerStatus.Processing).Count();
+            if(unhealthy == 0) groupHealth = Health.Healthy;
+            else if(healthy > 0) groupHealth = Health.Warning;
+            else groupHealth = Health.Unhealthy;
             return new OperationGroupStatus
             {
                 Containers = _containers.Count,
-                HealthyContainers = health.Where(x => x.Healthy).Count(),
-                UnhealthyContainers = (_containers.Count - health.Where(x => x.Healthy).Count()),
-                ReadyContainers = health.Where(x => x.ContainerStatus == ContainerStatus.Ready).Count(),
-                ProcessingContainers = health.Where(x => x.ContainerStatus == ContainerStatus.Processing).Count()
+                HealthyContainers = healthy,
+                UnhealthyContainers = unhealthy,
+                ReadyContainers = ready,
+                ProcessingContainers = processing,
+                GroupHealth = groupHealth
             };
         }
 
@@ -156,6 +178,24 @@ namespace PitBoss
         {
             await container.SendShutdownAsync();
             _containers.Remove(container);
+        }
+
+        public GroupDescription GetDescription()
+        {
+            var task = GetDescriptionAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<GroupDescription> GetDescriptionAsync()
+        {
+            return new GroupDescription {
+                Name = PipelineStep.Name,
+                Script = PipelineStep.Name,
+                TargetSize = TargetSize,
+                CurrentSize = await CurrentSizeAsync(),
+                Status = await GetGroupHealthAsync()
+            };
         }
     }
 }

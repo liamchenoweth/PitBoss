@@ -6,6 +6,8 @@ namespace PitBoss {
         {
             Id = request.Id;
             PipelineId = request.PipelineId;
+            PipelineName = request.PipelineName;
+            PipelineStepId = request.PipelineStepId;
         }
         public string Id {get; set;}
         public string PipelineId { get; set; }
@@ -21,7 +23,12 @@ namespace PitBoss {
     }
 
     public class OperationResponse<T> : OperationResponse 
-    {    
+    {
+        public OperationResponse() : base () {}
+        public OperationResponse(OperationRequest request) : base(request)
+        {
+
+        }
         public T Result {get; set;}
     }
 }

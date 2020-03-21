@@ -2,12 +2,13 @@ using System;
 using System.Net.Http;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Newtonsoft.Json;
 using PitBoss.Extensions;
 using JobContainer;
 
@@ -81,8 +82,8 @@ namespace PitBoss {
         public async Task SendRequestAsync(OperationRequest request)
         {
             var client = _clientFactory.CreateClient();
-            var content = new MultipartFormDataContent();
-            content.Add(new StringContent(JsonSerializer.Serialize<OperationRequest>(request)), "request");
+            var text = JsonConvert.SerializeObject(request);
+            var content = new StringContent(text, Encoding.UTF8, "application/json");
             await client.PostAsync($"{Url}/operation/request", content);
         }
 
@@ -112,7 +113,6 @@ namespace PitBoss {
             var client = _clientFactory.CreateClient();
             var response = await client.GetAsync($"{Url}/container/status");
             var output = await response.Content.ReadAsStringAsync();
-            var ret = JsonSerializer.Deserialize<OperationStatus>(output);
             return await response.Content.DeserialiseAsync<OperationStatus>();
         }
 
@@ -152,6 +152,22 @@ namespace PitBoss {
         public async Task ForceShutdownAsync()
         {
             await _host.StopAsync();
+        }
+
+        public OperationDescription GetDescription()
+        {
+            var task = GetDescriptionAsync();
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public async Task<OperationDescription> GetDescriptionAsync()
+        {
+            return new OperationDescription
+            {
+                Name = Name,
+                Status = await GetContainerStatusAsync()
+            };
         }
     }
 }

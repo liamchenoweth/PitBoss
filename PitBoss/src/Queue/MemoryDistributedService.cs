@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,14 @@ namespace PitBoss
             if(!_queues.ContainsKey(queue)) _queues[queue] = new ConcurrentQueue<string>();
             var queueRef = _queues[queue];
             return new MemoryDistributedQueue<T>(ref queueRef);
+        }
+
+        public IDistributedQueue GetQueue(string queue, Type type)
+        {
+            var queueType = typeof(MemoryDistributedQueue<>).MakeGenericType(new Type[] {type});
+            if(!_queues.ContainsKey(queue)) _queues[queue] = new ConcurrentQueue<string>();
+            var queueRef = _queues[queue];
+            return (IDistributedQueue) Activator.CreateInstance(queueType, new object[] { queueRef });
         }
 
         public IDistributedCache GetCache()

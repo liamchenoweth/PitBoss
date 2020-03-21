@@ -23,5 +23,9 @@ namespace PitBoss
         Task<IEnumerable<IOperationContainer>> GetHealthyContainersAsync();
         IEnumerable<IOperationContainer> GetUnhealthyContainers();
         Task<IEnumerable<IOperationContainer>> GetUnhealthyContainersAsync();
+        IEnumerable<IOperationContainer> GetContainers();
+        Task<IEnumerable<IOperationContainer>> GetContainersAsync();
+        GroupDescription GetDescription();
+        Task<GroupDescription> GetDescriptionAsync();
     }
 }

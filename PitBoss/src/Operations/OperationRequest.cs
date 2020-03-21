@@ -1,6 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace PitBoss {
     public class OperationRequest 
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id {get; set;}
         public string PipelineName { get; set; }
         public string PipelineId { get; set; }

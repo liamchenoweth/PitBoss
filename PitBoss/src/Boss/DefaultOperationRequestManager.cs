@@ -8,55 +8,57 @@ namespace PitBoss {
     public class DefaultOperationRequestManager : IOperationRequestManager {
         private IDistributedService _memoryService;
         private IPipelineManager _pipelineManager;
-        private IPipelineRequestManager _pipelineRequestManager;
+        //private IPipelineRequestManager _pipelineRequestManager;
         public const string CachePrefix = "operation-request";
         private BossContext _db;
 
         public DefaultOperationRequestManager(
             IDistributedService memoryService, 
             BossContext db, 
-            IPipelineManager pipelineManager, 
-            IPipelineRequestManager pipelineRequestManager)
+            IPipelineManager pipelineManager
+            )
         {
             _memoryService = memoryService;
             _pipelineManager = pipelineManager;
-            _pipelineRequestManager = pipelineRequestManager;
             _db = db;
         }
 
         public void QueueRequest(OperationRequest request) 
         {
-            var requestString = $"{CachePrefix}:{request.PipelineName}";
+            var pipelineStep = _pipelineManager.Pipelines.Where(x => x.Name == request.PipelineName).FirstOrDefault()?.Steps[request.PipelineStepId];
+            if(pipelineStep == null) throw new Exception($"No pipeline found by name {request.PipelineName}");
+            var requestString = $"{CachePrefix}:{pipelineStep.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
-            queue.Push(request);
             request.Status = RequestStatus.Pending;
             _db.OperationRequests.Add(request);
             _db.SaveChanges();
+            queue.Push(request);
         }
 
-        public void ProcessResponse(OperationResponse response)
+        public bool ProcessResponse(OperationResponse response)
         {
             var respType = response.GetType().GenericTypeArguments[0];
-            var request = (OperationRequest) Activator.CreateInstance(typeof(OperationRequest).MakeGenericType(new Type[]{respType}));
+            var request = (OperationRequest) Activator.CreateInstance(typeof(OperationRequest<>).MakeGenericType(new Type[]{respType}));
             request.PipelineId = response.PipelineId;
             request.PipelineName = response.PipelineName;
             var pipeline = _pipelineManager.Pipelines.Where(x => x.Name == response.PipelineName).FirstOrDefault();
             if(pipeline == null) throw new Exception($"Pipeline {response.PipelineName} not found");
             if(pipeline.Steps.Count <= response.PipelineStepId + 1)
             {
-                _pipelineRequestManager.FinishRequest(response);
-                return;
+                return true;
             }
             var nextStep = pipeline.Steps[response.PipelineStepId + 1];
             var resp = response.GetType().GetProperty("Result").GetGetMethod().Invoke(response, null);
             request.GetType().GetProperty("Parameter").GetSetMethod().Invoke(request, new object[] { resp });
             QueueRequest(request);
+            return false;
         }
 
         public OperationRequest FetchNextRequest(PipelineStep Operation) { 
             var requestString = $"{CachePrefix}:{Operation.Name}";
-            var queue = _memoryService.GetQueue<OperationRequest>(requestString);
-            var item = queue.Pop();
+            Type requestType = typeof(OperationRequest<>).MakeGenericType(new Type[] { Operation.GetType().GenericTypeArguments.First() });
+            var queue = _memoryService.GetQueue(requestString, requestType);
+            var item = queue.PopObject() as OperationRequest;
             if(item == null) return null;
             var dbItem = _db.OperationRequests.Where(x => x.Id == item.Id).FirstOrDefault();
             if(dbItem != null)

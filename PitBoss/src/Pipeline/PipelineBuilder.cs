@@ -1,4 +1,4 @@
-using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace PitBoss {
@@ -27,6 +27,8 @@ namespace PitBoss {
         }
 
         public PipelineBuilder<TOut> AddStep<TOut>(PipelineStep<TIn, TOut> step) {
+            var lastStep = _steps.LastOrDefault();
+            lastStep?.NextSteps?.Add(step.Id);
             _steps.Add(step);
             return new PipelineBuilder<TOut>(this);
         }

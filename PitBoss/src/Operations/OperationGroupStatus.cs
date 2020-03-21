@@ -1,3 +1,5 @@
+using PitBoss.Utils;
+
 namespace PitBoss
 {
     public class OperationGroupStatus
@@ -7,6 +9,7 @@ namespace PitBoss
         public int UnhealthyContainers {get;set;}
         public int ReadyContainers {get;set;}
         public int ProcessingContainers {get;set;}
+        public Health GroupHealth {get;set;}
     }
     
 }

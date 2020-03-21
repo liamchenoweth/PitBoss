@@ -11,6 +11,9 @@ class Builder : IPipelineBuilder {
         PipelineBuilder<int> builder = new PipelineBuilder<int>(desc);
         return builder
             .AddStep(new PipelineStep<int, string>("stringify.csx"))
+            .AddStep(new PipelineStep<string, int>("stringify.csx"))
+            .AddStep(new PipelineStep<int, string>("stringify.csx"))
+            .AddStep(new PipelineStep<string, int>("stringify.csx"))
             .Build();
     }
 }
@@ -18,7 +21,7 @@ class Builder : IPipelineBuilder {
 class Builder2 : IPipelineBuilder {
     public Pipeline Build() {
         PipelineDescriptor desc = new PipelineDescriptor{
-            Name = "test"
+            Name = "test2"
         };
 
         PipelineBuilder<int> builder = new PipelineBuilder<int>(desc);

@@ -4,7 +4,7 @@ namespace PitBoss {
     public interface IOperationRequestManager
     {
         void QueueRequest(OperationRequest request);
-        void ProcessResponse(OperationResponse response);
+        bool ProcessResponse(OperationResponse response);
         OperationRequest FetchNextRequest(PipelineStep step);
         void ReturnRequest(OperationRequest request);
         IEnumerable<OperationRequest> PendingRequests();

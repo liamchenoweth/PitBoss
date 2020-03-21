@@ -1,6 +1,6 @@
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace PitBoss.Extensions
 {
@@ -8,7 +8,8 @@ namespace PitBoss.Extensions
     {
         public static async Task<T> DeserialiseAsync<T>(this HttpContent content)
         {
-            return await JsonSerializer.DeserializeAsync<T>(await content.ReadAsStreamAsync());
+            // Using newtonsoft here because dotnet core implementation doesn't work well with enums
+            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await content.ReadAsStringAsync()));
         }
 
         public static T Deserialise<T>(this HttpContent content)

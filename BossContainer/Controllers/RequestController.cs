@@ -21,5 +21,11 @@ namespace PitBoss {
             _requestManager.QueueRequest(request);
             return Ok(request);
         }
+
+        [HttpGet("result")]
+        public ActionResult GetJobResult(string requestId)
+        {
+            return Ok(_requestManager.GetResponse(requestId));
+        }
     }
 }

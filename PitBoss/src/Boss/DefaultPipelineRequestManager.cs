@@ -10,20 +10,25 @@ namespace PitBoss {
     public class DefaultPipelineRequestManager : IPipelineRequestManager {
         private IDistributedService _memoryService;
         private IPipelineManager _pipelineManager;
+        private IOperationRequestManager _requestManager;
         private BossContext _db;
 
-        public DefaultPipelineRequestManager(IDistributedService memoryService, BossContext db, IPipelineManager pipelineManager)
+        public DefaultPipelineRequestManager(
+            IDistributedService memoryService, 
+            BossContext db, 
+            IPipelineManager pipelineManager,
+            IOperationRequestManager requestManager)
         {
             _memoryService = memoryService;
             _pipelineManager = pipelineManager;
             _db = db;
+            _requestManager = requestManager;
         }
 
         public void QueueRequest(PipelineRequest request) 
         {
             var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[0];
             var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{step.Name}";
-            var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             var operation = new OperationRequest(request, 0);
             // TODO: set this correctly
             operation.CallbackUri = "localhost:4000";
@@ -41,7 +46,7 @@ namespace PitBoss {
             _db.PipelineRequests.Add(request);
             genericOperation.PipelineId = request.Id;
             _db.SaveChanges();
-            queue.Push(genericOperation);
+            _requestManager.QueueRequest(genericOperation);
         }
 
         public void FinishRequest(OperationResponse response)
@@ -51,6 +56,10 @@ namespace PitBoss {
             request.Status = RequestStatus.Complete;
             _db.SaveChanges();
             _memoryService.GetCache().Set($"{DefaultOperationRequestManager.CachePrefix}:{response.PipelineId}", response);
+        }
+
+        public IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName) {
+            return _db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
         }
 
         public IEnumerable<PipelineRequest> PendingRequests() {
@@ -80,6 +89,16 @@ namespace PitBoss {
             if(request.Status != RequestStatus.Complete) return null;
             var json = _memoryService.GetCache().GetString($"{DefaultOperationRequestManager.CachePrefix}:{request.Id}");
             return json;
+        }
+
+        public OperationResponse GetResponse(string requestId)
+        {
+            var request = FindRequest(requestId);
+            if(request.Status != RequestStatus.Complete) return null;
+            var json = _memoryService.GetCache().GetString($"{DefaultOperationRequestManager.CachePrefix}:{request.Id}");
+            var pipelineType = _pipelineManager.GetPipeline(request.PipelineName).Output;
+            var respType = pipelineType == null ? typeof(OperationResponse) : typeof(OperationResponse<>).MakeGenericType(new Type[] {pipelineType});
+            return (OperationResponse)JsonSerializer.Deserialize(json, respType);
         }
     }
 }

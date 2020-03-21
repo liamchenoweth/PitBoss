@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace PitBoss
 {
@@ -17,19 +17,28 @@ namespace PitBoss
 
         public void Push(T obj)
         {
-            _queue.Enqueue(JsonSerializer.Serialize(obj));
+            PushObject(obj);
+        }
+
+        public void PushObject(object obj)
+        {
+            _queue.Enqueue(JsonConvert.SerializeObject(obj));
         }
 
         public void PushFront(T obj)
         {
-            
-            _queue.Enqueue(JsonSerializer.Serialize(obj));
+            _queue.Enqueue(JsonConvert.SerializeObject(obj));
         }
 
         public T Pop()
         {
-            if(_queue.TryDequeue(out var obj)) return JsonSerializer.Deserialize<T>(obj);
+            if(_queue.TryDequeue(out var obj)) return JsonConvert.DeserializeObject<T>(obj);
             return default(T);
+        }
+
+        public object PopObject()
+        {
+            return Pop();
         }
 
         public T PopBack()
@@ -41,7 +50,7 @@ namespace PitBoss
         {
             get
             {
-                return _queue.Select(x => JsonSerializer.Deserialize<T>(x));
+                return _queue.Select(x => JsonConvert.DeserializeObject<T>(x));
             }
         }
     }

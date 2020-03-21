@@ -6,6 +6,8 @@ namespace PitBoss {
     public interface IOperationManager
     {
         bool Ready {get;}
+        Type InputType {get;}
+        Type OutputType {get;}
         void QueueRequest(OperationRequest request);
         OperationRequest GetNextRequest();
         Task<object> ProcessRequest(OperationRequest request);

@@ -1,18 +1,23 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace PitBoss {
     public class Pipeline {
 
         private List<PipelineStep> _steps;
-        private PipelineDescriptor _desc;
+        public PipelineDescriptor Description {get; private set;}
+        public Type Input {get; private set;}
+        public Type Output {get; private set;}
 
         public Pipeline(PipelineDescriptor desc, List<PipelineStep> steps) {
             _steps = steps;
-            _desc = desc;
+            Description = desc;
+            Input = _steps.First().GetType().GenericTypeArguments.First();
+            Output = _steps.Last().GetType().GenericTypeArguments.Length == 2 ? _steps.Last().GetType().GenericTypeArguments.Last() : null;
         }
 
-        internal List<PipelineStep> Steps 
+        public List<PipelineStep> Steps 
         { 
             get
             {
@@ -20,7 +25,7 @@ namespace PitBoss {
             } 
         }
 
-        public string Name { get => _desc.Name; }
+        public string Name { get => Description.Name; }
         public string DllLocation { get; set; }
     }
 }
