@@ -78,6 +78,10 @@ namespace PitBoss {
             return _db.PipelineRequests.Where(x => x.Status == RequestStatus.Failed);
         }
 
+        public IEnumerable<PipelineRequest> AllRequests(){ 
+            return _db.PipelineRequests;
+        }
+
         public PipelineRequest FindRequest(string requestId)
         {
             return _db.PipelineRequests.Where(x => x.Id == requestId).FirstOrDefault();

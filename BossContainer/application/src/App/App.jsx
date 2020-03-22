@@ -25,6 +25,7 @@ import {
 // Pages
 import Pipelines from '../Pipelines/Pipelines.jsx';
 import Operations from '../Operations/Operations';
+import Requests from '../Requests/Requests';
 
 const drawerWidth = 240;
 
@@ -61,7 +62,7 @@ const styles = makeStyles(theme => ({
 function MenuItem(props) {
   let classes = styles();
   var match = useRouteMatch(props.link);
-  var isSelected = match && match.isExact;
+  var isSelected = match && (props.link == "/" ? match.isExact : true);
   console.log(isSelected)
   return (
     <Link to={props.link} className={classes.link}>
@@ -116,7 +117,7 @@ function App() {
               <Operations/>
             </Route>
             <Route path="/requests">
-              Requests
+              <Requests/>
             </Route>
             <Route>Fallback (404 Not Found)</Route>
           </Switch>

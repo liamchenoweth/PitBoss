@@ -16,6 +16,12 @@ namespace PitBoss {
             return Ok(request);
         }
 
+        [HttpGet("requests")]
+        public ActionResult GetRequests()
+        {
+            return Ok(_requestManager.AllRequests());
+        }
+
         [HttpPost("request")]
         public ActionResult RequestJob([FromBody]PipelineRequest request) {
             _requestManager.QueueRequest(request);

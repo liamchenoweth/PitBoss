@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
+import { Link } from "react-router-dom";
 import { makeStyles } from '@material-ui/core/styles';
 
 import Paper from '@material-ui/core/Paper';
@@ -38,11 +38,13 @@ function Step(props)
     var classes = styles();
     return (
         <foreignObject x={props.x} y={props.y} width={width} height={height}>
-            <Paper className={classes.step}>
-                <Typography variant="h6">{props.name}</Typography>
-                <Typography variant="subtitle1">24%</Typography>
-                <div className={`${classes.healthBar} ${classes.healthy}`}/>
-            </Paper>
+            <Link to={`/operations/${props.name}`}>
+                <Paper className={classes.step}>
+                    <Typography variant="h6">{props.name}</Typography>
+                    <Typography variant="subtitle1">24%</Typography>
+                    <div className={`${classes.healthBar} ${classes.healthy}`}/>
+                </Paper>
+            </Link>
         </foreignObject>
     )
 }

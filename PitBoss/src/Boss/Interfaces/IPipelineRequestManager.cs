@@ -10,6 +10,7 @@ namespace PitBoss {
         IEnumerable<PipelineRequest> InProgressRequests();
         IEnumerable<PipelineRequest> CompletedRequests();
         IEnumerable<PipelineRequest> FailedRequests();
+        IEnumerable<PipelineRequest> AllRequests();
         PipelineRequest FindRequest(string requestId);
         string GetResponseJson(string requestId);
         OperationResponse GetResponse(string requestId);
