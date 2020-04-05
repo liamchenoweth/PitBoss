@@ -5,13 +5,14 @@ namespace PitBoss {
     {
         void QueueRequest(PipelineRequest request);
         void FinishRequest(OperationResponse response);
-        IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName);
-        IEnumerable<PipelineRequest> PendingRequests();
-        IEnumerable<PipelineRequest> InProgressRequests();
-        IEnumerable<PipelineRequest> CompletedRequests();
-        IEnumerable<PipelineRequest> FailedRequests();
-        IEnumerable<PipelineRequest> AllRequests();
-        PipelineRequest FindRequest(string requestId);
+        IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName, bool expanded = false);
+        IEnumerable<PipelineRequest> PendingRequests(bool expanded = false);
+        IEnumerable<PipelineRequest> InProgressRequests(bool expanded = false);
+        IEnumerable<PipelineRequest> CompletedRequests(bool expanded = false);
+        IEnumerable<PipelineRequest> FailedRequests(bool expanded = false);
+        IEnumerable<PipelineRequest> AllRequests(bool expanded = false);
+        PipelineRequest FindRequest(string requestId, bool expanded = false);
+        void CancelRequest(string requestId);
         string GetResponseJson(string requestId);
         OperationResponse GetResponse(string requestId);
     }

@@ -25,12 +25,13 @@ namespace PitBoss {
         [HttpPost("operation/script")]
         public async Task<ActionResult> RecieveScript(List<IFormFile> executionScript) 
         {
-            var baseLocation = "OperationContainer/scripts";
+            var baseLocation = "OperationContainer";
             Directory.CreateDirectory(baseLocation);
             foreach(var file in executionScript)
             {
                 if(file.Length > 0)
                 {
+                    Directory.CreateDirectory(Path.GetDirectoryName($"{baseLocation}/{file.FileName}"));
                     using(var fileStream = new FileStream($"{baseLocation}/{file.FileName}", FileMode.Create))
                     {
                         await file.CopyToAsync(fileStream);

@@ -33,7 +33,19 @@ namespace PitBoss
 
         public async Task<int> CurrentSizeAsync()
         {
-            return _containers.Count;
+            var count = 0;
+            var toRemove = new List<IOperationContainer>();
+            foreach(var container in _containers)
+            {
+                var status = await container.GetContainerStatusAsync();
+                if(status.Healthy){
+                    count++;
+                    continue;
+                }
+                toRemove.Add(container);
+            }
+            toRemove.ForEach(x => _containers.Remove(x));
+            return count;
         }
 
         public IEnumerable<IOperationContainer> GetContainers()

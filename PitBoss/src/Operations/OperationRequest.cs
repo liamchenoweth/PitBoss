@@ -1,19 +1,22 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PitBoss {
-    public class OperationRequest 
+    public class OperationRequest : BaseEntity
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id {get; set;}
         public string PipelineName { get; set; }
         public string PipelineId { get; set; }
-        public int PipelineStepId { get; set; }
+        public string PipelineStepId { get; set; }
         public string CallbackUri { get; set; }
         public RequestStatus Status { get; set; }
+        public DateTime Started {get;set;}
+        public DateTime Completed {get;set;}
         public OperationRequest() {}
-        public OperationRequest(PipelineRequest pipeline, int step)
+        public OperationRequest(PipelineRequest pipeline, string step)
         {
             PipelineName = pipeline.PipelineName;
             PipelineId = pipeline.Id;

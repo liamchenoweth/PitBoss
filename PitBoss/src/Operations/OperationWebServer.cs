@@ -43,9 +43,9 @@ namespace PitBoss
                     mvcOptions.AddApplicationPart(_callingAssembly);
                 })
                 .UseStartup<OperationWebServerConfiguration>()
+                .UseShutdownTimeout(new TimeSpan(0, 0, 5))
                 .Build();
-
-            host.Start();
+            host.RunAsync();
             return host;
         }
 

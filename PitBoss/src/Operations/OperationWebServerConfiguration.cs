@@ -46,14 +46,16 @@ namespace PitBoss
             });
             services.AddHttpClient();
             services.AddHostedService<OperationService>();
-            services.AddControllers().AddNewtonsoftJson()
+            services.AddControllers()
+            .AddControllersAsServices()
+            .AddNewtonsoftJson()
             .AddJsonOptions(opts => {
                 opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
             });
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
         {
             app.UseRouting();
             app.UseEndpoints(endpoints => {

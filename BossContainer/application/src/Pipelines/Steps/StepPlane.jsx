@@ -29,10 +29,12 @@ function PartitionSteps(steps)
             steps: [{
                     item,
                     paths: item.props.nextSteps.map(x => {
+                        var foundStep = steps.filter(a => a.props.id == x)[0];
                         return ({
                             x: ((i + 1)* 2 + 1) * Math.asin(1)/(steps.length * Math.PI), // still need to check if we skip past a partition
                             y: 0.5, // find y calc for this later
-                            id: x
+                            id: x,
+                            color: foundStep.props.color
                         })
                     })
                 }]
@@ -43,6 +45,7 @@ function PartitionSteps(steps)
 function StepPlane(props)
 {
     var partitions = PartitionSteps(props.children);
+    console.log(partitions);
     var classes = styles();
     var canvasWidth = partitions.length * (StepWidth + (columnMargin * 2));
     var canvasHeight = (partitions.reduce((prev, current) => (prev.steps.length > current.steps.length) ? prev : current).steps.length) * (StepHeight + (columnMargin * 2))
@@ -50,13 +53,37 @@ function StepPlane(props)
         <div style={{ width: canvasWidth, height: canvasHeight }} className={classes.plane}>
             <svg width={canvasWidth} height={canvasHeight}>
                 <defs>
-                    <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="8" height="8">
+                    <pattern id="diagonalHatch-green" patternUnits="userSpaceOnUse" width="8" height="8">
                         <rect x="0" y="0" width="8" height="8" fill="green"/>
                         <rect x="0" y="1" width="8" height="5" fill="white"/>
                         <path d="M-2,2 l4,-4
                                 M0,8 l8,-8
                                 M6,10 l4,-4" 
                                 style={{stroke:"green", strokeWidth:2}} />
+                    </pattern>
+                    <pattern id="diagonalHatch-orange" patternUnits="userSpaceOnUse" width="8" height="8">
+                        <rect x="0" y="0" width="8" height="8" fill="orange"/>
+                        <rect x="0" y="1" width="8" height="5" fill="white"/>
+                        <path d="M-2,2 l4,-4
+                                M0,8 l8,-8
+                                M6,10 l4,-4" 
+                                style={{stroke:"orange", strokeWidth:2}} />
+                    </pattern>
+                    <pattern id="diagonalHatch-red" patternUnits="userSpaceOnUse" width="8" height="8">
+                        <rect x="0" y="0" width="8" height="8" fill="red"/>
+                        <rect x="0" y="1" width="8" height="5" fill="white"/>
+                        <path d="M-2,2 l4,-4
+                                M0,8 l8,-8
+                                M6,10 l4,-4" 
+                                style={{stroke:"red", strokeWidth:2}} />
+                    </pattern>
+                    <pattern id="diagonalHatch-grey" patternUnits="userSpaceOnUse" width="8" height="8">
+                        <rect x="0" y="0" width="8" height="8" fill="grey"/>
+                        <rect x="0" y="1" width="8" height="5" fill="white"/>
+                        <path d="M-2,2 l4,-4
+                                M0,8 l8,-8
+                                M6,10 l4,-4" 
+                                style={{stroke:"grey", strokeWidth:2}} />
                     </pattern>
                 </defs>
                 {partitions.map((partition, i) => 
@@ -65,7 +92,7 @@ function StepPlane(props)
                             <React.Fragment key={step.item.props.id}>
                                 <Step {...step.item.props} x={(partition.x * canvasWidth) - (StepWidth / 2)} y={partition.y * canvasHeight - (StepHeight / 2)}/>
                                 {step.paths.map(path => {
-                                    return <polygon key={`${step.item.props.id}-${path.id}`} fill="url(#diagonalHatch)" points={`${(partition.x * canvasWidth) + (StepWidth / 2)},${partition.y * canvasHeight - pathWidth} ${(path.x * canvasWidth) - (StepWidth / 2)},${path.y * canvasHeight - pathWidth} ${(path.x * canvasWidth) - (StepWidth / 2)},${path.y * canvasHeight + pathWidth} ${(partition.x * canvasWidth) + (StepWidth / 2)},${partition.y * canvasHeight + pathWidth}`}/>
+                                    return <polygon key={`${step.item.props.id}-${path.id}`} fill={`url(#diagonalHatch-${path.color || "grey"})`} points={`${(partition.x * canvasWidth) + (StepWidth / 2)},${partition.y * canvasHeight - pathWidth} ${(path.x * canvasWidth) - (StepWidth / 2)},${path.y * canvasHeight - pathWidth} ${(path.x * canvasWidth) - (StepWidth / 2)},${path.y * canvasHeight + pathWidth} ${(partition.x * canvasWidth) + (StepWidth / 2)},${partition.y * canvasHeight + pathWidth}`}/>
                                 })}
                             </React.Fragment>
                         )

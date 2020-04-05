@@ -1,14 +1,25 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace PitBoss {
     public class HeartbeatController : Controller {
-        public HeartbeatController() {
-
+        private IHostApplicationLifetime _lifetime;
+        private ContainerController _containerController;
+        public HeartbeatController(IHostApplicationLifetime lifetime, ContainerController containerController) {
+            _lifetime = lifetime;
+            _containerController = containerController;
         }
 
         [HttpGet("heartbeat")]
-        public OperationStatus Heartbeat() {
-            return new OperationStatus();
+        public ActionResult Heartbeat() {
+            return Ok();
+        }
+
+        [HttpPost("shutdown")]
+        public ActionResult Shutdown()
+        {
+            _lifetime.StopApplication();
+            return Ok(_containerController.ContainerStatus());
         }
     }
 }

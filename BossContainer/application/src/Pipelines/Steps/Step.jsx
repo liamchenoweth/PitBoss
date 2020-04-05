@@ -23,9 +23,6 @@ const styles = makeStyles(theme => ({
         position: "absolute",
         borderRadius: "0 0 4px 4px"
     },
-    healthy: {
-        backgroundColor: "#7cb342"
-    },
     path: {
         height: 10,
         position: "absolute",
@@ -41,8 +38,8 @@ function Step(props)
             <Link to={`/operations/${props.name}`}>
                 <Paper className={classes.step}>
                     <Typography variant="h6">{props.name}</Typography>
-                    <Typography variant="subtitle1">24%</Typography>
-                    <div className={`${classes.healthBar} ${classes.healthy}`}/>
+                    <Typography variant="subtitle1">{props.children}</Typography>
+                    <div className={`${classes.healthBar}`} style={{ backgroundColor: (props.color || "grey") }}/>
                 </Paper>
             </Link>
         </foreignObject>

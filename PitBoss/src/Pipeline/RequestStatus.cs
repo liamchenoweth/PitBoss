@@ -5,6 +5,7 @@ namespace PitBoss
         None,
         Pending,
         Executing,
+        Cancelled,
         Complete,
         Failed
     }

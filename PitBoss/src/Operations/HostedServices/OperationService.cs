@@ -11,11 +11,13 @@ namespace PitBoss
         private IOperationManager _operationManager;
         private IOperationHealthManager _healthManager;
         private ILogger _logger;
-        public OperationService(IOperationManager operationManager, ILogger<OperationService> logger, IOperationHealthManager healthManager)
+        private IHostApplicationLifetime _lifetime;
+        public OperationService(IOperationManager operationManager, ILogger<OperationService> logger, IOperationHealthManager healthManager, IHostApplicationLifetime lifetime)
         {
             _operationManager = operationManager;
             _healthManager = healthManager;
             _logger = logger;
+            _lifetime = lifetime;
         }
 
         protected async override Task ExecuteAsync(CancellationToken cancelationToken)
@@ -39,14 +41,14 @@ namespace PitBoss
                 {
                     _logger.LogInformation($"Starting request {nextRequest.Id}");
                     var ret = await _operationManager.ProcessRequest(nextRequest);
-                    await _operationManager.FinishRequestAsync(nextRequest, ret);
+                    await _operationManager.FinishRequestAsync(nextRequest, ret, true);
                     _logger.LogInformation($"Finished request {nextRequest.Id}");
                 }
                 catch (Exception e)
                 {
                     _logger.LogError(e, $"Failed to process {nextRequest.Id}");
                     _healthManager.FailActiveOperation(nextRequest, e);
-                    await _operationManager.FinishRequestAsync(nextRequest, null);
+                    await _operationManager.FinishRequestAsync(nextRequest, null, false);
                 }
             }
             _logger.LogInformation("Shutting down operation container");

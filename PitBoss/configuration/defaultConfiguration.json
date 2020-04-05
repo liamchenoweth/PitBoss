@@ -5,20 +5,12 @@
         ]
     },
     "Boss": {
-        "Callback": 
-        {
-            "Uri": "localhost:4000",
-            "Scheme": "http"
-        },
         "Pipelines":
         {
             "Location": "scripts/pipelines"
         },
         "Scripts":
         {
-            "AdditionalLocations": [
-                "scripts/additions"
-            ],
             "Location": "scripts/steps"
         },
         "Database":

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -55,7 +56,8 @@ namespace PitBoss
             services.AddHostedService<OperationGroupService>();
             services.AddHostedService<ContainerService>();
             services.AddControllers().AddNewtonsoftJson(options => {
-              options.SerializerSettings.Converters.Add(new StringEnumConverter());  
+              options.SerializerSettings.Converters.Add(new StringEnumConverter());
+              options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             });
         }
 

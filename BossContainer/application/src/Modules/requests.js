@@ -15,3 +15,21 @@ export async function Get(url, params)
     config.params = params
     return await axios(config);
 }
+
+export async function Post(url, body)
+{
+    var config = RequestConfig();
+    config.method = "post";
+    config.url = url;
+    config.data = body;
+    return await axios(config);
+}
+
+export async function Delete(url, body)
+{
+    var config = RequestConfig();
+    config.method = "delete";
+    config.url = url;
+    config.data = body;
+    return await axios(config);
+}

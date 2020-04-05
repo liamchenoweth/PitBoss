@@ -38,6 +38,16 @@ namespace PitBoss
             return Ok(descriptions);
         }
 
+        [HttpDelete("operations/{name}/containers/{id}")]
+        public async Task<ActionResult> DeleteContainer(string name, string id)
+        {
+            var group = await _containerManager.GetContainersByStepAsync(new PipelineStep(name));
+            var container = group.SingleOrDefault(x => x.Name == id);
+            if(container == default) return NotFound();
+            await group.RemoveContainerAsync(container);
+            return Ok();
+        }
+
         // Create operation/result
         [HttpPost("operation/result")]
         public ActionResult PostResult([FromBody]JObject result)
@@ -45,7 +55,7 @@ namespace PitBoss
             var prelimResult = result.ToObject<OperationResponse>();
             if(prelimResult == null) return BadRequest();
             var pipeline = _pipelineManager.GetPipeline(prelimResult.PipelineName);
-            var step = pipeline.Steps[prelimResult.PipelineStepId];
+            var step = pipeline.Steps.Single(x => x.Id == prelimResult.PipelineStepId);
             OperationResponse fullResult = null;
             if(step.Output == null)
             {

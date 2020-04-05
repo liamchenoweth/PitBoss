@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
@@ -30,7 +30,7 @@ function RequestRow(props)
 {
     return (
     <TableRow>
-        <TableCell>{props.id}</TableCell>
+        <TableCell><Link to={`/requests/${props.id}`}>{props.id}</Link></TableCell>
         <TableCell>{props.status}</TableCell>
     </TableRow>
     )
@@ -60,7 +60,7 @@ function Pipeline()
             {details.steps && <div className={classes.stepLayout}>
                 <StepPlane>
                     {details.steps.map(step => {
-                        return <Step {...step} key={step.id} />
+                        return <Step {...step} key={step.id} color={"green"}/>
                     })}
                 </StepPlane>
             </div>}

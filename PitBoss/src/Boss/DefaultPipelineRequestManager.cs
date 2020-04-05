@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Reflection;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.EntityFrameworkCore;
 using PitBoss.Extensions;
 
 namespace PitBoss {
@@ -29,10 +30,7 @@ namespace PitBoss {
         {
             var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[0];
             var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{step.Name}";
-            var operation = new OperationRequest(request, 0);
-            // TODO: set this correctly
-            operation.CallbackUri = "localhost:4000";
-            operation.Status = RequestStatus.Pending;
+            var operation = new OperationRequest(request, step.Id);
             request.Status = RequestStatus.Pending;
             OperationRequest genericOperation = operation;
             if(!string.IsNullOrEmpty(request.Input))
@@ -53,56 +51,108 @@ namespace PitBoss {
         {
             var request = _db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
             if(request == null) throw new Exception($"Request with ID {response.PipelineId} not found");
-            request.Status = RequestStatus.Complete;
+            request.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
+            request.Response = response;
             _db.SaveChanges();
             _memoryService.GetCache().Set($"{DefaultOperationRequestManager.CachePrefix}:{response.PipelineId}", response);
         }
 
-        public IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName) {
-            return _db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
+        public IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName, bool expanded = false) {
+            var requests = _db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public IEnumerable<PipelineRequest> PendingRequests() {
-            return _db.PipelineRequests.Where(x => x.Status == RequestStatus.Pending);
+        public IEnumerable<PipelineRequest> PendingRequests(bool expanded = false) {
+            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Pending);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public IEnumerable<PipelineRequest> InProgressRequests() {
-            return _db.PipelineRequests.Where(x => x.Status == RequestStatus.Executing);
+        public IEnumerable<PipelineRequest> InProgressRequests(bool expanded = false) {
+            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Executing);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public IEnumerable<PipelineRequest> CompletedRequests(){ 
-            return _db.PipelineRequests.Where(x => x.Status == RequestStatus.Complete);
+        public IEnumerable<PipelineRequest> CompletedRequests(bool expanded = false){ 
+            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Complete);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public IEnumerable<PipelineRequest> FailedRequests(){ 
-            return _db.PipelineRequests.Where(x => x.Status == RequestStatus.Failed);
+        public IEnumerable<PipelineRequest> FailedRequests(bool expanded = false){ 
+            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Failed);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public IEnumerable<PipelineRequest> AllRequests(){ 
-            return _db.PipelineRequests;
+        public IEnumerable<PipelineRequest> AllRequests(bool expanded = false){ 
+            IQueryable<PipelineRequest> requests = _db.PipelineRequests;
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
         }
 
-        public PipelineRequest FindRequest(string requestId)
+        public PipelineRequest FindRequest(string requestId, bool expanded = false)
         {
-            return _db.PipelineRequests.Where(x => x.Id == requestId).FirstOrDefault();
+            var requests = _db.PipelineRequests.Where(x => x.Id == requestId);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests.ToList().FirstOrDefault();
+        }
+
+        public void CancelRequest(string requestId)
+        {
+            var request = _db.PipelineRequests.Where(x => x.Id == requestId).FirstOrDefault();
+            if(request == default) throw new KeyNotFoundException($"request \"{requestId}\" not found");
+            request.Status = RequestStatus.Cancelled;
+            _db.SaveChanges();
         }
 
         public string GetResponseJson(string requestId)
         {
-            var request = FindRequest(requestId);
+            var request = FindRequest(requestId, true);
             if(request.Status != RequestStatus.Complete) return null;
             var json = _memoryService.GetCache().GetString($"{DefaultOperationRequestManager.CachePrefix}:{request.Id}");
-            return json;
+            if(json != null)
+            {
+                return json;
+            }
+            return request.Response.Result;
         }
 
         public OperationResponse GetResponse(string requestId)
         {
-            var request = FindRequest(requestId);
+            var request = FindRequest(requestId, true);
             if(request.Status != RequestStatus.Complete) return null;
             var json = _memoryService.GetCache().GetString($"{DefaultOperationRequestManager.CachePrefix}:{request.Id}");
             var pipelineType = _pipelineManager.GetPipeline(request.PipelineName).Output;
             var respType = pipelineType == null ? typeof(OperationResponse) : typeof(OperationResponse<>).MakeGenericType(new Type[] {pipelineType});
-            return (OperationResponse)JsonSerializer.Deserialize(json, respType);
+            if(json != null)
+            {
+                return (OperationResponse)JsonSerializer.Deserialize(json, respType);
+            }
+            return (OperationResponse)Activator.CreateInstance(respType, new object[]{request.Response});
         }
     }
 }

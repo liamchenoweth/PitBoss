@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Hosting;
@@ -45,18 +46,26 @@ namespace PitBoss {
         public async Task SendOperationAsync(string location)
         {
             var fileName = $"{_configuration["Boss:Scripts:Location"]}/{location}";
+            var filesToSend = new List<string>();
+            _configuration.Bind("Boss:Scripts:AdditionalLocations", filesToSend);
+            filesToSend = filesToSend.SelectMany(x => Directory.GetFiles(x, "*", SearchOption.AllDirectories))
+                .ToList();
+            filesToSend.Add(fileName);
             var client = _clientFactory.CreateClient();
             MultipartFormDataContent content = new MultipartFormDataContent();
-            byte[] payload = null;
-            try
+            foreach(var file in filesToSend)
             {
-                payload = await File.ReadAllBytesAsync(fileName);
-            }catch(FileNotFoundException e)
-            {
-                _logger.LogCritical(e, $"Operation script not found at {fileName}, shutting down container");
-                await _host.StopAsync();
+                byte[] payload = null;
+                try
+                {
+                    payload = await File.ReadAllBytesAsync(file);
+                }catch(FileNotFoundException e)
+                {
+                    _logger.LogCritical(e, $"Operation script not found at {file}, shutting down container");
+                    await _host.StopAsync();
+                }
+                content.Add(new ByteArrayContent(payload), "executionScript", file);
             }
-            content.Add(new ByteArrayContent(payload), "executionScript", Path.GetFileName(fileName));
             try
             {
                 var response = await client.PostAsync($"{Url}/operation/script", content);
@@ -111,7 +120,17 @@ namespace PitBoss {
         public async Task<OperationStatus> GetContainerStatusAsync()
         {
             var client = _clientFactory.CreateClient();
-            var response = await client.GetAsync($"{Url}/container/status");
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.GetAsync($"{Url}/container/status");
+            }catch(Exception e)
+            {
+                return new OperationStatus
+                {
+                    ContainerStatus = ContainerStatus.Error
+                };
+            }
             var output = await response.Content.ReadAsStringAsync();
             return await response.Content.DeserialiseAsync<OperationStatus>();
         }
@@ -140,7 +159,7 @@ namespace PitBoss {
         public async Task<bool> SendShutdownAsync()
         {
             var client = _clientFactory.CreateClient();
-            var response = await client.GetAsync($"{Url}/shutdown");
+            var response = await client.PostAsync($"{Url}/shutdown", null);
             return (await response.Content.DeserialiseAsync<OperationStatus>()).ContainerStatus == ContainerStatus.ShuttingDown;
         }
 

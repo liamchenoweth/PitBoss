@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
-using System.Text.Json;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,7 +51,7 @@ namespace PitBoss {
         public OperationRequest DeserialiseRequest(string requestJson)
         {
             var deserialiseType = typeof(OperationRequest<>).MakeGenericType(InputType);
-            OperationRequest request = (OperationRequest) JsonSerializer.Deserialize(requestJson, deserialiseType);
+            OperationRequest request = (OperationRequest) JsonConvert.DeserializeObject(requestJson, deserialiseType);
             return request;
         }
 
@@ -65,8 +65,12 @@ namespace PitBoss {
         public async Task<OperationRequest> DeserialiseRequestAsync(Stream requestJson)
         {
             var deserialiseType = typeof(OperationRequest<>).MakeGenericType(InputType);
-            OperationRequest request = (OperationRequest)(await JsonSerializer.DeserializeAsync(requestJson, deserialiseType));
-            return request;
+            using(var reader = new StreamReader(requestJson))
+            {
+                var json = await reader.ReadToEndAsync();
+                OperationRequest request = (await (Task.Factory.StartNew(() => (OperationRequest)JsonConvert.DeserializeObject(json, deserialiseType))));
+                return request;
+            }
         }
 
         public async Task<object> ProcessRequest(OperationRequest request)
@@ -75,15 +79,15 @@ namespace PitBoss {
             var requestType = request.GetType();
             var propInfo = requestType.GetProperty("Parameter");
             object parameter = propInfo.GetValue(request);
-            return await Task.Run(() => _operation.DynamicInvoke(parameter), _healthManager.GetCancellationToken(request));
+            return (await Task.Run(() => _operation.DynamicInvoke(parameter), _healthManager.GetCancellationToken(request)));
         }
 
-        public void FinishRequest(OperationRequest request, object output)
+        public void FinishRequest(OperationRequest request, object output, bool failed)
         {
-            FinishRequestAsync(request, output).RunSynchronously();
+            FinishRequestAsync(request, output, failed).RunSynchronously();
         }
 
-        public async Task FinishRequestAsync(OperationRequest request, object output)
+        public async Task FinishRequestAsync(OperationRequest request, object output, bool failed)
         {
             // Get our specific response generic type
             var respType = typeof(OperationResponse<>).MakeGenericType(OutputType);
@@ -91,16 +95,16 @@ namespace PitBoss {
             var response = (OperationResponse) Activator.CreateInstance(respType, new object[] { request });
             // Set our result
             // This will throw an error if the output is not the correct type
-            response.GetType().GetProperty("Result").GetSetMethod().Invoke(response, new object[] { output });
-            response.Success = true;
+            response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == respType).GetSetMethod().Invoke(response, new object[] { output });
+            response.Success = failed;
             var client = _clientFactory.CreateClient();
-            var content = new StringContent(JsonSerializer.Serialize(response, respType), Encoding.UTF8, "application/json");
-            var postResp = await client.PostAsync($"http://{request.CallbackUri}/{ResponseUri}", content);
+            var content = new StringContent(await Task.Factory.StartNew(() => JsonConvert.SerializeObject(response)), Encoding.UTF8, "application/json");
+            var postResp = await client.PostAsync($"{request.CallbackUri}/{ResponseUri}", content);
             // TODO: do some error checking / retrying here
             _healthManager.FinishActiveOperation(request);
         }
 
-        public async Task<Delegate> CompileOperationAsync(string location)
+        public async Task CompileOperationAsync(string location)
         {
             await Compilation.CompileScriptAsync(location, CompilationOutput);
             string compiledOperation = $"{CompilationOutput}/{Path.GetFileNameWithoutExtension(location)}.dll";
@@ -115,7 +119,7 @@ namespace PitBoss {
             // Then create the Operations from those types
             // Finally set the DLL location so we can send it off to the workers
             var types = dll.GetTypes().Where(x => typeof(IOperation).IsAssignableFrom(x));
-            if(types.Count() == 0) throw new Exception($"No types that implement IOperation found in {location}");
+            if(types.Count() == 0) return;
             if(types.Count() != 1) throw new Exception($"Too many types that implement IOperation found in {location}, {types.Count()} found, 1 expected");
             var type = types.First();
             var inter = type.GetInterfaces().Where(i => i.IsGenericType).First();
@@ -141,14 +145,12 @@ namespace PitBoss {
             var operation = op.GetType().GetMethod("Execute").CreateDelegate(delegateType, op);
             _operation = operation;
             Ready = true;
-            return operation;
         }
 
-        public Delegate CompileOperation(string location)
+        public void CompileOperation(string location)
         {
             var task = CompileOperationAsync(location);
             task.RunSynchronously();
-            return task.Result;
         }
     }
 }

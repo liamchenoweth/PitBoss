@@ -28,8 +28,8 @@ namespace PitBoss {
 
         public PipelineBuilder<TOut> AddStep<TOut>(PipelineStep<TIn, TOut> step) {
             var lastStep = _steps.LastOrDefault();
-            lastStep?.NextSteps?.Add(step.Id);
-            _steps.Add(step);
+            if(lastStep != default && lastStep.NextSteps != null) step.AddAsNextSteps(lastStep.NextSteps);
+            step.AddStepsToPipeline(_steps);
             return new PipelineBuilder<TOut>(this);
         }
 

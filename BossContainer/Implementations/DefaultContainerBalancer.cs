@@ -40,7 +40,7 @@ namespace PitBoss
             {
                 for(var x = currentCount; x < group.TargetSize; x++)
                 {
-                    group.AddContainer(new DefaultOperationContainer(group.PipelineStep, _factory, _logger, _configuration));
+                    await group.AddContainerAsync(new DefaultOperationContainer(group.PipelineStep, _factory, _logger, _configuration));
                 }
             }
         }

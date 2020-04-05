@@ -13,19 +13,27 @@ import Typography from '@material-ui/core/Typography';
 import Stop from '@material-ui/icons/Stop';
 
 import Paginate from '../Utilities/Paginate/Paginate';
-import { Get } from '../Modules/requests';
+import { Get, Delete } from '../Modules/requests';
 import { getHealthSymbol } from '../Modules/helpers';
 
 function ContainerRow(props)
 {
+    var params = useParams();
     return (
         <TableRow>
             <TableCell>{props.name}</TableCell>
             <TableCell>{getHealthSymbol(props.status.healthy ? "Healthy" : "Unhealthy")}</TableCell>
             <TableCell>{props.status.containerStatus}</TableCell>
-            <TableCell><Stop style={{color: "red"}}/></TableCell>
+            <TableCell><Stop style={{color: "red"}} onClick={DeleteContainer(params.name, props.name)}/></TableCell>
         </TableRow>
     )
+}
+
+function DeleteContainer(operation, id)
+{
+    return async () => {
+        await Delete(`/api/operations/${operation}/containers/${id}`);
+    }
 }
 
 function Operation()

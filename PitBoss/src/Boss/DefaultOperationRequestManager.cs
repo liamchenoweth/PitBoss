@@ -1,13 +1,16 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 
 namespace PitBoss {
     public class DefaultOperationRequestManager : IOperationRequestManager {
         private IDistributedService _memoryService;
         private IPipelineManager _pipelineManager;
+        private IConfiguration _configuration;
         //private IPipelineRequestManager _pipelineRequestManager;
         public const string CachePrefix = "operation-request";
         private BossContext _db;
@@ -15,40 +18,63 @@ namespace PitBoss {
         public DefaultOperationRequestManager(
             IDistributedService memoryService, 
             BossContext db, 
-            IPipelineManager pipelineManager
+            IPipelineManager pipelineManager,
+            IConfiguration configuration
             )
         {
             _memoryService = memoryService;
             _pipelineManager = pipelineManager;
             _db = db;
+            _configuration = configuration;
         }
 
         public void QueueRequest(OperationRequest request) 
         {
-            var pipelineStep = _pipelineManager.Pipelines.Where(x => x.Name == request.PipelineName).FirstOrDefault()?.Steps[request.PipelineStepId];
+            var pipelineStep = _pipelineManager.Pipelines.Where(x => x.Name == request.PipelineName).FirstOrDefault()?.Steps.Single(x => x.Id == request.PipelineStepId);
             if(pipelineStep == null) throw new Exception($"No pipeline found by name {request.PipelineName}");
             var requestString = $"{CachePrefix}:{pipelineStep.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             request.Status = RequestStatus.Pending;
+            request.CallbackUri = $"{_configuration["Boss:Callback:Scheme"]}://{_configuration["Boss:Callback:Uri"]}";
             _db.OperationRequests.Add(request);
             _db.SaveChanges();
             queue.Push(request);
+            SetActiveOperation(request);
+        }
+
+        public void SetActiveOperation(OperationRequest request)
+        {
+            var pipeRequest = _db.PipelineRequests.Where(x => x.Id == request.PipelineId).FirstOrDefault();
+            if(pipeRequest != default)
+            {
+                pipeRequest.CurrentRequest = request;
+                pipeRequest.Status = RequestStatus.Executing;
+                _db.SaveChanges();
+            }
         }
 
         public bool ProcessResponse(OperationResponse response)
         {
+            _db.OperationResponses.Add(response);
+            _db.SaveChanges();
             var respType = response.GetType().GenericTypeArguments[0];
             var request = (OperationRequest) Activator.CreateInstance(typeof(OperationRequest<>).MakeGenericType(new Type[]{respType}));
             request.PipelineId = response.PipelineId;
             request.PipelineName = response.PipelineName;
             var pipeline = _pipelineManager.Pipelines.Where(x => x.Name == response.PipelineName).FirstOrDefault();
+            var nextStep = pipeline.Steps.Single(x => x.Id == response.PipelineStepId).GetNextStep(response);
+            request.PipelineStepId = nextStep;
             if(pipeline == null) throw new Exception($"Pipeline {response.PipelineName} not found");
-            if(pipeline.Steps.Count <= response.PipelineStepId + 1)
+            var pipeRequest = _db.PipelineRequests.Where(x => x.Id == request.PipelineId).FirstOrDefault();
+            var dbRequest = _db.OperationRequests.Single(x => x.Id == response.Id);
+            dbRequest.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
+            dbRequest.Completed = DateTime.Now;
+            _db.SaveChanges();
+            if(string.IsNullOrEmpty(nextStep) || !response.Success || pipeRequest.Status == RequestStatus.Cancelled)
             {
                 return true;
             }
-            var nextStep = pipeline.Steps[response.PipelineStepId + 1];
-            var resp = response.GetType().GetProperty("Result").GetGetMethod().Invoke(response, null);
+            var resp = response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == response.GetType()).GetGetMethod().Invoke(response, null);
             request.GetType().GetProperty("Parameter").GetSetMethod().Invoke(request, new object[] { resp });
             QueueRequest(request);
             return false;
@@ -64,6 +90,7 @@ namespace PitBoss {
             if(dbItem != null)
             {
                 dbItem.Status = RequestStatus.Executing;
+                dbItem.Started = DateTime.Now;
                 _db.SaveChanges();
             }
             return item;
@@ -71,13 +98,14 @@ namespace PitBoss {
 
         public void ReturnRequest(OperationRequest request)
         {
-            var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[request.PipelineStepId];
+            var step = _pipelineManager.GetPipeline(request.PipelineName).Steps.Single(x => x.Id == request.PipelineStepId);
             var requestString = $"{CachePrefix}:{step.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             queue.PushFront(request);
             var dbRequest = _db.OperationRequests.Where(x => x.Id == request.Id).FirstOrDefault();
             if(dbRequest == null) return;
             dbRequest.Status = RequestStatus.Pending;
+            dbRequest.Started = default;
             _db.SaveChanges();
         }
 
@@ -100,6 +128,11 @@ namespace PitBoss {
         public OperationRequest FindRequest(string requestId)
         {
             return _db.OperationRequests.Where(x => x.Id == requestId).FirstOrDefault();
+        }
+
+        public IEnumerable<OperationRequest> FindOperationsForRequest(string requestId)
+        {
+            return _db.OperationRequests.Where(x => x.PipelineId == requestId);
         }
     }
 }
