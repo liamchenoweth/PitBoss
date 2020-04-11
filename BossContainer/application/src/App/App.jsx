@@ -63,7 +63,6 @@ function MenuItem(props) {
   let classes = styles();
   var match = useRouteMatch(props.link);
   var isSelected = match && (props.link == "/" ? match.isExact : true);
-  console.log(isSelected)
   return (
     <Link to={props.link} className={classes.link}>
       <ListItem button selected={isSelected} classes={{ selected: classes.selectedLink }}>

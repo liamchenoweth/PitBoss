@@ -8,6 +8,7 @@ namespace PitBoss {
         {
             Id = Guid.NewGuid().ToString();
             NextSteps = new List<string>();
+            IsBranch = false;
         }
         public PipelineStep(string script_name)
         {
@@ -16,8 +17,11 @@ namespace PitBoss {
             Output = null;
             Id = Guid.NewGuid().ToString();
             NextSteps = new List<string>();
+            IsBranch = false;
         }
         public List<string> NextSteps {get; protected set;}
+        public bool IsBranch {get; protected set;}
+        public string BranchEndId {get; protected set;}
         public string Id {get; protected set;}
         public string Name {get; protected set;}
         public Type Input {get; protected set;}
@@ -36,6 +40,11 @@ namespace PitBoss {
         public virtual void AddStepsToPipeline(List<PipelineStep> steps)
         {
             steps.Add(this);
+        }
+
+        internal virtual void SetStepId(string Id)
+        {
+            this.Id = Id;
         }
     }
 
@@ -68,56 +77,6 @@ namespace PitBoss {
             Name = script_name;
             Output = typeof(OutArg);
             Input = null;
-        }
-    }
-
-    public class NullInputPipelineStep<OutArg> : PipelineStep {
-        public NullInputPipelineStep(string script_name)
-        {
-            Name = script_name;
-            Output = typeof(OutArg);
-            Input = null;
-        }
-    }
-
-    public class DistributedStep<InArg, OutArg> : PipelineStep<InArg, OutArg> where InArg : IEnumerable<InArg> {
-        public DistributedStep(string script_name) : base(script_name) {}
-    }
-
-    public interface IBranchResponse
-    {
-        string BranchId {get;}
-    }
-
-    public class BranchingStep<InArg, OutArg> : PipelineStep<InArg, OutArg> where OutArg : IBranchResponse
-    {
-        private Dictionary<string, string> _nextPipelines;
-        private List<PipelineStep> _subSteps;
-        public BranchingStep(IEnumerable<PipelineBuilder<OutArg>> pipelines) : base()
-        {
-            var builtPipelines = pipelines.Select(x => new { desc = x._description, pipe = x.Build() });
-            _nextPipelines = builtPipelines.ToDictionary(x => x.desc.BranchId, y => y.pipe.Steps.First().Id);
-            _subSteps = builtPipelines.SelectMany(x => x.pipe.Steps).ToList();
-        }
-
-        public override string GetNextStep(OperationResponse response)
-        {
-            var properResponse = response as OperationResponse<OutArg>;
-            if(_nextPipelines.TryGetValue(properResponse.Result.BranchId, out var nextId))
-            {
-                return nextId;
-            }
-            throw new KeyNotFoundException($"Step name \"{properResponse.Result.BranchId}\" not found");
-        }
-
-        public override void AddAsNextSteps(List<string> steps)
-        {
-            steps.AddRange(_nextPipelines.Values);
-        }
-
-        public override void AddStepsToPipeline(List<PipelineStep> steps)
-        {
-            steps.AddRange(_subSteps);
         }
     }
 }

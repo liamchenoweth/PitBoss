@@ -158,7 +158,7 @@ function Request()
                     {pipeline.steps.map((step, i) => {
                         console.log(step);
                         var op = operations ? operations.filter(x => x.pipelineStepId == step.id)[0] : [];
-                        return (<Step {...step} key={step.id} color={getStepColor(request.status)}>
+                        return (<Step {...step} key={step.id} color={op ? getStepColor(op.status) : getStepColor(null)}>
                             {op && (new Date(op.started)).getFullYear() != 1 && ((((new Date(op.completed)).getFullYear() == 1 ? Date.now() : new Date(op.completed))  - new Date(op.started)) / 1000).toString().toHHMMSS()}                            
                         </Step>)
                     })}
