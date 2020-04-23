@@ -26,6 +26,14 @@ const styles = makeStyles(theme => ({
         borderRadius: 10,
         maxWidth: "100%",
         overflowX: "scroll"
+    },
+    distributedTime: {
+        width: "50%",
+        float: "left"
+    },
+    distributedCount: {
+        width: "50%",
+        float: "right"
     }
 }));
 
@@ -118,8 +126,23 @@ String.prototype.toHHMMSS = function () {
     return hours+':'+minutes+':'+seconds;
 }
 
-function getStepColor(status)
+function getStepColor(ops)
 {
+    if(!ops) return "grey";
+    debugger;
+    if(ops.length > 1)
+    {
+        var status = (ops.filter(x => x.status == "Executing").length > 0 
+                || (ops.filter(x => x.status == "Complete").length != ops.length 
+                && ops.filter(x => x.status == "Complete").length > 0)) ? "Executing" 
+            : (ops.filter(x => x.status == "Complete").length == ops.length) ? "Complete"
+            : (ops.filter(x => x.status == "Failed" || x.status == "Cancelled").length > 0) ? "Failed"
+            : "Other"; 
+    }
+    else
+    {
+        var status = ops[0].status;
+    }
     if(status == "Executing") return "orange";
     if(status == "Complete") return "green";
     if((status == "Failed" || status == "Cancelled")) return "red";
@@ -148,7 +171,6 @@ function Request()
             updateOperations(operationData);
         })();
     }, [])
-    console.log(pipeline);
     return (
         <div>
             <Typography variant="h4">Request: {params.id}</Typography>
@@ -156,10 +178,34 @@ function Request()
             {pipeline && <div className={classes.stepLayout}>
                 <StepPlane>
                     {pipeline.steps.map((step, i) => {
-                        console.log(step);
-                        var op = operations ? operations.filter(x => x.pipelineStepId == step.id)[0] : [];
-                        return (<Step {...step} key={step.id} color={op ? getStepColor(op.status) : getStepColor(null)}>
-                            {op && (new Date(op.started)).getFullYear() != 1 && ((((new Date(op.completed)).getFullYear() == 1 ? Date.now() : new Date(op.completed))  - new Date(op.started)) / 1000).toString().toHHMMSS()}                            
+                        var ops = operations ? operations.filter(x => x.pipelineStepId == step.id && !x.isParentOperation) : [];
+                        console.log(ops);
+                        return (<Step {...step} key={step.id} color={ops.length > 0 ? getStepColor(ops) : getStepColor(null)}>
+                            { ops.length > 0 &&
+                                (() => {
+                                    if(ops.length > 1)
+                                    {
+                                        var startDate = Math.min.apply(Math, ops.map(op => new Date(op.started)).filter(x => x.getFullYear() != 1));
+                                        var endDate = Math.max.apply(Math, ops.map(op => new Date(op.completed)).filter(x => x.getFullYear() != 1));
+                                        var timeSpent = isFinite(startDate) ? (isFinite(endDate) ? endDate - startDate : Date.now() - startDate) : null
+                                        return (
+                                            <React.Fragment>
+                                                <div className={classes.distributedTime}>
+                                                    {(timeSpent / 1000).toString().toHHMMSS()}
+                                                </div>
+                                                <div className={classes.distributedCount}>
+                                                    {ops.filter(x => new Date(x.completed).getFullYear() != 1).length} / {ops.length} 
+                                                </div>
+                                            </React.Fragment>
+                                        )
+                                    }
+                                    else
+                                    {
+                                        var op = ops[0];
+                                        return (new Date(op.started)).getFullYear() != 1 && ((((new Date(op.completed)).getFullYear() == 1 ? Date.now() : new Date(op.completed))  - new Date(op.started)) / 1000).toString().toHHMMSS();
+                                    }
+                                })()
+                            }                          
                         </Step>)
                     })}
                 </StepPlane>

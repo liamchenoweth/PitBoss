@@ -29,13 +29,7 @@ namespace PitBoss {
         public string PipelineName { get; set; }
         public string PipelineStepId { get; set; }
         public bool Success { get; set; }
-        // How to handle this will get confusing
-        // Want to handle this on the operation as it will be much better than on the boss
-        // TODO: add this back
-        // IDEA: instead of operation returning value, instead return the operationResponse?
-        // Or some other object that contains all the options we want to expose
-        //public bool Loop { get; set; }
-
+        
         protected string _result;
         public string Result {
             get => _result;

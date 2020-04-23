@@ -14,6 +14,8 @@ namespace PitBoss
         public DbSet<PipelineRequest> PipelineRequests { get; set; }
         public DbSet<OperationRequest> OperationRequests { get; set; }
         public DbSet<OperationResponse> OperationResponses { get; set; }
+        public DbSet<DistributedOperationRequest> DistributedOperationRequests { get; set; }
+        public DbSet<DistributedRequestSeed> DistributedRequestSeeds { get; set; }
 
         public BossContext(IConfiguration configuration) : base()
         {

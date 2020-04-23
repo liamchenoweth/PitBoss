@@ -8,8 +8,13 @@ namespace PitBoss {
         TOut Execute(TIn input);
     }
 
-    public interface IOperation<TIn> : IOperation
+    public interface INullOutputOperation<TIn> : IOperation
     {
         void Execute(TIn input);
+    }
+
+    public interface INullInputOperation<TOut> : IOperation
+    {
+        TOut Execute();
     }
 }

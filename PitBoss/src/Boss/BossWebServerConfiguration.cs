@@ -34,6 +34,7 @@ namespace PitBoss
 
             services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
             services.AddSingleton<IDistributedService, MemoryDistributedService>();
+            services.AddTransient<IDistributedRequestManager, DefaultDistributedRequestManager>();
             services.AddSingleton(providers);
             services.AddSingleton<ILoggerFactory>(sc => {
                 var providerCollection = sc.GetService<LoggerProviderCollection>();
@@ -55,6 +56,7 @@ namespace PitBoss
             // Hosted Services
             services.AddHostedService<OperationGroupService>();
             services.AddHostedService<ContainerService>();
+            services.AddHostedService<DistributedStepService>();
             services.AddControllers().AddNewtonsoftJson(options => {
               options.SerializerSettings.Converters.Add(new StringEnumConverter());
               options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;

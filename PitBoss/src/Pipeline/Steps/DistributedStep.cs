@@ -2,7 +2,12 @@ using System.Collections.Generic;
 
 namespace PitBoss
 {
-    public class DistributedStep<InArg, OutArg> : PipelineStep<InArg, OutArg> where InArg : IEnumerable<InArg> {
+    public interface IDistributedOperation<TIn, TOut> : IOperation<TIn, TOut>
+    {
+
+    }
+    public class DistributedStep<InArg, OutArg> : PipelineStep<IEnumerable<InArg>, IEnumerable<OutArg>> 
+    {
         public DistributedStep(string script_name) : base(script_name) {}
     }
 }

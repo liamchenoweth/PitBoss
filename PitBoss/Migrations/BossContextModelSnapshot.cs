@@ -16,6 +16,30 @@ namespace PitBoss.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "3.1.1");
 
+            modelBuilder.Entity("PitBoss.DistributedRequestSeed", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DistributedOperationRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DistributedRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OperationRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DistributedRequestId");
+
+                    b.HasIndex("OperationRequestId");
+
+                    b.ToTable("DistributedRequestSeeds");
+                });
+
             modelBuilder.Entity("PitBoss.OperationRequest", b =>
                 {
                     b.Property<string>("Id")
@@ -29,6 +53,19 @@ namespace PitBoss.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstigatingRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsParentOperation")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ParentRequestId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PipelineId")
@@ -52,6 +89,8 @@ namespace PitBoss.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("OperationRequests");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("OperationRequest");
                 });
 
             modelBuilder.Entity("PitBoss.OperationResponse", b =>
@@ -119,6 +158,30 @@ namespace PitBoss.Migrations
                     b.HasIndex("ResponseId");
 
                     b.ToTable("PipelineRequests");
+                });
+
+            modelBuilder.Entity("PitBoss.DistributedOperationRequest", b =>
+                {
+                    b.HasBaseType("PitBoss.OperationRequest");
+
+                    b.Property<string>("BeginingStepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EndingStepId")
+                        .HasColumnType("TEXT");
+
+                    b.HasDiscriminator().HasValue("DistributedOperationRequest");
+                });
+
+            modelBuilder.Entity("PitBoss.DistributedRequestSeed", b =>
+                {
+                    b.HasOne("PitBoss.DistributedOperationRequest", "DistributedOperationRequest")
+                        .WithMany("SeedingRequestIds")
+                        .HasForeignKey("DistributedRequestId");
+
+                    b.HasOne("PitBoss.OperationRequest", "OperationRequest")
+                        .WithMany()
+                        .HasForeignKey("OperationRequestId");
                 });
 
             modelBuilder.Entity("PitBoss.PipelineRequest", b =>

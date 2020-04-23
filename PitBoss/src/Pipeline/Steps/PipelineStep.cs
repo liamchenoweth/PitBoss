@@ -26,6 +26,10 @@ namespace PitBoss {
         public string Name {get; protected set;}
         public Type Input {get; protected set;}
         public Type Output {get; protected set;}
+        public bool IsDistributedStart {get; internal set;}
+        public bool IsDistributed { get; internal set;}
+        public string DistributedEndId {get; internal set;}
+        public bool IsDistributedEnd { get => Id == DistributedEndId;}
 
         public virtual string GetNextStep(OperationResponse response)
         {

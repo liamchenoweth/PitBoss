@@ -20,7 +20,13 @@ namespace PitBoss.Migrations
                     CallbackUri = table.Column<string>(nullable: true),
                     Status = table.Column<int>(nullable: false),
                     Started = table.Column<DateTime>(nullable: false),
-                    Completed = table.Column<DateTime>(nullable: false)
+                    Completed = table.Column<DateTime>(nullable: false),
+                    ParentRequestId = table.Column<string>(nullable: true),
+                    InstigatingRequestId = table.Column<string>(nullable: true),
+                    IsParentOperation = table.Column<bool>(nullable: false),
+                    Discriminator = table.Column<string>(nullable: false),
+                    EndingStepId = table.Column<string>(nullable: true),
+                    BeginingStepId = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -43,6 +49,33 @@ namespace PitBoss.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OperationResponses", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DistributedRequestSeeds",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    DistributedOperationRequestId = table.Column<string>(nullable: true),
+                    DistributedRequestId = table.Column<string>(nullable: true),
+                    OperationRequestId = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DistributedRequestSeeds", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedRequestId",
+                        column: x => x.DistributedRequestId,
+                        principalTable: "OperationRequests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_DistributedRequestSeeds_OperationRequests_OperationRequestId",
+                        column: x => x.OperationRequestId,
+                        principalTable: "OperationRequests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -76,6 +109,16 @@ namespace PitBoss.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_DistributedRequestSeeds_DistributedRequestId",
+                table: "DistributedRequestSeeds",
+                column: "DistributedRequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DistributedRequestSeeds_OperationRequestId",
+                table: "DistributedRequestSeeds",
+                column: "OperationRequestId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PipelineRequests_CurrentRequestId",
                 table: "PipelineRequests",
                 column: "CurrentRequestId");
@@ -88,6 +131,9 @@ namespace PitBoss.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "DistributedRequestSeeds");
+
             migrationBuilder.DropTable(
                 name: "PipelineRequests");
 

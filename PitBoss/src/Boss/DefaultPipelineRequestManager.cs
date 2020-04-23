@@ -30,7 +30,7 @@ namespace PitBoss {
         {
             var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[0];
             var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{step.Name}";
-            var operation = new OperationRequest(request, step.Id);
+            var operation = new OperationRequest(request, step.Id, null);
             request.Status = RequestStatus.Pending;
             OperationRequest genericOperation = operation;
             if(!string.IsNullOrEmpty(request.Input))
@@ -38,7 +38,7 @@ namespace PitBoss {
                 var stepType = step.GetType().GetGenericArguments()[0];
                 var input = JsonSerializer.Deserialize(request.Input, stepType);
                 var operationRequestType = typeof(OperationRequest<>).MakeGenericType(stepType);
-                genericOperation = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {operation, input});
+                genericOperation = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {operation, input, null});
             }
             Console.WriteLine(JsonSerializer.Serialize(genericOperation));
             _db.PipelineRequests.Add(request);

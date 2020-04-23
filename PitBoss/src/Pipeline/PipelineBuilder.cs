@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace PitBoss {
@@ -12,6 +13,7 @@ namespace PitBoss {
         internal List<PipelineStep> _steps;
         internal PipelineDescriptor _description;
         public abstract Pipeline Build();
+        public virtual bool Distributed {get => false;}
     }
 
     public class PipelineBuilder<TIn> : PipelineBuilder {
@@ -21,17 +23,23 @@ namespace PitBoss {
             _steps = new List<PipelineStep>();
         }
 
-        private PipelineBuilder(PipelineBuilder copy) {
+        protected PipelineBuilder(PipelineBuilder copy) {
             _description = copy._description;
             _steps = copy._steps;
         }
 
-        private string getStepId(PipelineStep step)
+        protected string getStepId(PipelineStep step)
         {
             return $"{_description.Name}-{step.Name}-{_steps.Count}-{_description.BranchId ?? "0"}";
         }
 
         public PipelineBuilder<TOut> AddStep<TOut>(PipelineStep<TIn, TOut> step) {
+            
+            return AddStep<TOut>((PipelineStep)step);
+        }
+
+        private PipelineBuilder<TOut> AddStep<TOut>(PipelineStep step)
+        {
             step.SetStepId(getStepId(step));
             var lastStep = _steps.LastOrDefault();
             if(lastStep != default && lastStep.NextSteps != null) step.AddAsNextSteps(lastStep.NextSteps);
@@ -68,6 +76,22 @@ namespace PitBoss {
             var builder = loop.AddStep(loopStep);
             _steps.AddRange(builder._steps);
             return new PipelineBuilder<TOut>(this);
+        }
+
+        public PipelineBuilder<IEnumerable<TOut>> AddDistributedSection<TOut>(PipelineBuilder<TOut> builder)
+        {
+            if(!typeof(IEnumerable).IsAssignableFrom(typeof(TIn))) throw new Exception("Input must be of type IEnumerable for distributed sections");
+            var lastStep = builder._steps.Last();
+            builder._steps.First().IsDistributedStart = true;
+            // Add the first step so is continues correctly from previous steps
+            var thisBuilder = AddStep<object>(builder._steps.First());
+            builder._steps.ForEach(x => {
+                x.IsDistributed = true;
+                x.DistributedEndId = lastStep.Id;
+            });
+            // Skip the first step as we have already added it
+            thisBuilder._steps.AddRange(builder._steps.Skip(1));
+            return new PipelineBuilder<IEnumerable<TOut>>(thisBuilder);
         }
     }
 }
