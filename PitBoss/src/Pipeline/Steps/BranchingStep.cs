@@ -11,7 +11,7 @@ namespace PitBoss
     public class BranchingStep<InArg, OutArg> : PipelineStep<InArg, OutArg> where OutArg : IBranchResponse
     {
         private Dictionary<string, string> _nextPipelines;
-        public BranchingStep(string script) : base(script)
+        public BranchingStep(string script, PipelineStepOptions options = null) : base(script, options)
         {
             IsBranch = true;
             _nextPipelines = new Dictionary<string, string>();

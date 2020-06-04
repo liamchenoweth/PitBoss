@@ -34,6 +34,7 @@ namespace PitBoss
             services.AddRouting();
             services.AddSingleton<IOperationHealthManager, DefaultOperationHealthManager>();
             services.AddSingleton<IOperationManager, DefaultOperationManager>();
+            services.AddSingleton<IOperationService, OperationService>();
             services.AddSingleton(providers);
             services.AddSingleton<ILoggerFactory>(sc => {
                 var providerCollection = sc.GetService<LoggerProviderCollection>();
@@ -45,7 +46,6 @@ namespace PitBoss
                 return factory;
             });
             services.AddHttpClient();
-            services.AddHostedService<OperationService>();
             services.AddControllers()
             .AddControllersAsServices()
             .AddNewtonsoftJson()

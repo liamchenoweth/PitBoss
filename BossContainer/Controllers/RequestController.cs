@@ -9,13 +9,16 @@ namespace PitBoss {
         private IPipelineRequestManager _requestManager;
         private IOperationRequestManager _operationManager;
         private ILogger _logger;
-        public RequestController(IPipelineRequestManager requestManager, IOperationRequestManager operationManager, ILogger<RequestController> logger){
+        public RequestController(
+            IPipelineRequestManager requestManager, 
+            IOperationRequestManager operationManager, 
+            ILogger<RequestController> logger){
             _requestManager = requestManager;
             _logger = logger;
             _operationManager = operationManager;
         }
 
-        [HttpGet("request")]
+        [HttpGet("api/request")]
         public ActionResult GetJob(string requestId)
         {
             var request = _requestManager.FindRequest(requestId);
@@ -23,13 +26,13 @@ namespace PitBoss {
             return Ok(request);
         }
 
-        [HttpGet("requests")]
+        [HttpGet("api/requests")]
         public ActionResult GetRequests()
         {
             return Ok(_requestManager.AllRequests());
         }
 
-        [HttpGet("requests/{id}")]
+        [HttpGet("api/requests/{id}")]
         public ActionResult GetRequest(string id)
         {
             var request = _requestManager.FindRequest(id, true);
@@ -37,13 +40,13 @@ namespace PitBoss {
             return Ok(request);
         }
 
-        [HttpGet("requests/{id}/operations")]
+        [HttpGet("api/requests/{id}/operations")]
         public ActionResult GetOperations(string id)
         {
             return Ok(_operationManager.FindOperationsForRequest(id));
         }
 
-        [HttpDelete("requests/{id}/cancel")]
+        [HttpDelete("api/requests/{id}/cancel")]
         public ActionResult CancelRequest(string id)
         {
             try
@@ -57,7 +60,7 @@ namespace PitBoss {
             return Ok();
         }
 
-        [HttpPost("request")]
+        [HttpPost("api/request")]
         public ActionResult RequestJob([FromBody]PipelineRequest request) {
             try
             {
@@ -76,7 +79,7 @@ namespace PitBoss {
             return Ok(request);
         }
 
-        [HttpGet("result")]
+        [HttpGet("api/result")]
         public ActionResult GetJobResult(string requestId)
         {
             var response = _requestManager.GetResponse(requestId);

@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../PitBoss/PitBoss.csproj" />
-    <ProjectReference Include="../OperationContainer/OperationContainer.csproj" />
+    
   </ItemGroup>
 
   <ItemGroup>

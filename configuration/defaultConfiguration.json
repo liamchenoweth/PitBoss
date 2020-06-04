@@ -1,0 +1,47 @@
+{
+    "ContainerService": {
+        "Uri": "localhost",
+        "Port": "8003",
+        "Scheme": "http"
+    },
+    "OperationGroupContainer": {
+        "Uri": "localhost",
+        "Port": "8002",
+        "Scheme": "http"
+    },
+    "DistributedStepContainer": {
+        "Uri": "localhost",
+        "Port": "8001",
+        "Scheme": "http"
+    },
+    "Boss": {
+        "Host": {
+            "Uri": "localhost",
+            "Port": "8000",
+            "Scheme": "http"
+        },
+        "Pipelines":
+        {
+            "ContainerCountAggregator": "Maximum",
+            "Location": "scripts/pipelines"
+        },
+        "Scripts":
+        {
+            "AdditionalLocations": [
+                "scripts/additions"
+            ],
+            "Location": "scripts/steps"
+        },
+        "Cache": {
+            "UseCache": "PreCreated"
+        },
+        "Database":
+        {
+            "UseDatabase": "SQLite",
+            "SQLite": "Data Source = /Projects/PitBoss/database.db"
+        }
+    },
+    "Operations": {
+        "Image": "defaultOperationContainer"
+    }   
+}

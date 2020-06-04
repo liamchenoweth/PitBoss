@@ -60,7 +60,7 @@ function Step(props)
                     </Paper>}
                 <Paper className={classes.step}>
                     <div className={classes.border}/>
-                    <Typography variant="h6">{props.name}</Typography>
+                    <Typography variant="h6">{props.displayName}</Typography>
                     <Typography variant="subtitle1">{props.children}</Typography>
                     <div className={`${classes.healthBar}`} style={{ backgroundColor: (props.color || "grey") }}/>
                 </Paper>

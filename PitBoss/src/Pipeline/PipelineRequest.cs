@@ -10,6 +10,8 @@ namespace PitBoss
         public string PipelineName {get;set;}
         public RequestStatus Status {get;set;}
         public OperationRequest CurrentRequest {get;set;}
+        [ForeignKey("Response")]
+        public string ResponseId {get;set;}
         public OperationResponse Response {get;set;}
         public string Input {get;set;}
     }

@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine AS build-env
+WORKDIR /app
+
+COPY /PitBoss .
+RUN dotnet restore
+
+COPY ./configuration ./configuration
+COPY ./scripts ./scripts
+RUN dotnet tool install dotnet-ef --tool-path /usr/bin
+CMD ["dotnet", "ef", "database", "update", "--context", "PostgresContext"]

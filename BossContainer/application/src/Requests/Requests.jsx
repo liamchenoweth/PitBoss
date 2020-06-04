@@ -129,7 +129,6 @@ String.prototype.toHHMMSS = function () {
 function getStepColor(ops)
 {
     if(!ops) return "grey";
-    debugger;
     if(ops.length > 1)
     {
         var status = (ops.filter(x => x.status == "Executing").length > 0 

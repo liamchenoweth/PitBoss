@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OperationGroupContainer/OperationGroupContainer.csproj" />
+    <ProjectReference Include="../DistributedStepContainer/DistributedStepContainer.csproj" />
+    <ProjectReference Include="../ContainerService/ContainerService.csproj" />
+    <ProjectReference Include="../BossContainer/BossContainer.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+      <DefineConstants>LOCAL_DEV</DefineConstants>
+  </PropertyGroup>
+
+</Project>

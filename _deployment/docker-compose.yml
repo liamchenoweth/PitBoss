@@ -1,0 +1,54 @@
+version: '3.5'
+services:
+  redis:
+    image: redis
+    container_name: redis
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment: 
+      POSTGRES_USER: pitboss
+      POSTGRES_PASSWORD: pitboss
+    ports: 
+    - 5432:5432
+  dbup:
+    build:
+      context: ../
+      dockerfile: _deployment/DbUpDockerfile
+    environment:
+      PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+  boss-container:
+    build: 
+      context: ../
+      dockerfile: BossContainer/Dockerfile
+    container_name: boss-container
+    environment:
+      PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+    ports:
+    - 8000:80
+  container-service:
+    build: 
+      context: ../
+      dockerfile: ContainerService/Dockerfile
+    container_name: container-service
+    environment:
+      PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  distributed-step-container:
+    build: 
+      context: ../
+      dockerfile: DistributedStepContainer/Dockerfile
+    container_name: distributed-step-container
+    environment:
+      PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+  operation-group-container:
+    build: 
+      context: ../
+      dockerfile: OperationGroupContainer/Dockerfile
+    container_name: operation-group-container
+    environment:
+      PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+networks:
+  default:
+    name: pitboss

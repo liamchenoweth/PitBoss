@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
@@ -18,37 +19,27 @@ namespace PitBoss
         private Assembly _callingAssembly;
         private Action<IServiceCollection> _containerManager;
         private Action<IServiceCollection> _containerBalancer;
+        private Action<IServiceCollection> _configureServices;
+        private Action<IServiceCollection> _configureDistributedService;
+        public string Host {get; private set;}
+        public int Port {get; private set;}
 
-        public BossWebServer()
-        {
-            StartUp();
-        }
-
-        public IWebHost StartWebHost(string[] args)
+        public IWebHost StartWebHost(string host, int port)
         {
             _callingAssembly = Assembly.GetCallingAssembly();
+            var configPath = Environment.GetEnvironmentVariable("PITBOSS_CONFIGURATION");
             var config = new ConfigurationBuilder()
-                .AddJsonFile("configuration/defaultConfiguration.json", false, true)
-                // Allow provided configuration from user
-                // TODO: inform this location some other way (maybe env var?)
-                .AddJsonFile("configuration/configuration.json", true, true)
+                .AddJsonFile(Path.IsPathRooted(configPath) ? configPath : $"{FileUtils.GetBasePath()}/{configPath}", false, true)
                 .Build();
 
-            var host = new WebHostBuilder()
+            Host = host;
+            Port = port;
+
+            var webHost = new WebHostBuilder()
                 .UseConfiguration(config)
                 .UseSerilog(LoggingUtils.ConfigureSerilog())
                 .UseKestrel(options => {
-                    var urls = new List<string>();
-                    var kestrelSettings = config.GetSection("Kestrel");
-                    kestrelSettings.Bind("Urls", urls);
-                    foreach(var url in urls){
-                        Uri uri = new Uri(url);
-                        if(uri.Host == "localhost"){
-                            options.ListenLocalhost(uri.Port);
-                        }else {
-                            options.Listen(IPAddress.Parse(uri.Host), uri.Port);
-                        }
-                    }
+                    options.Listen(IPAddress.Parse(Host), Port);
                 })
                 .ConfigureServices(services => {
                     
@@ -56,20 +47,16 @@ namespace PitBoss
                     mvcOptions.PartManager.ApplicationParts.Clear();
                     mvcOptions.AddApplicationPart(_callingAssembly);
 
-                    if(_containerManager != null)
-                    {
-                        _containerManager(services);
-                    }
-                    if(_containerBalancer != null)
-                    {
-                        _containerBalancer(services);
-                    }
+                    if(_containerManager != null) _containerManager(services);
+                    if(_containerBalancer != null) _containerBalancer(services);
+                    if(_configureServices != null) _configureServices(services);
+                    if(_configureDistributedService != null) _configureDistributedService(services);
                 })
                 .UseStartup<BossWebServerConfiguration>()
                 .Build();
 
-            host.Start();
-            return host;
+            webHost.Start();
+            return webHost;
         }
 
         public BossWebServer UseContainerManager<T>() where T : class, IContainerManager
@@ -88,9 +75,13 @@ namespace PitBoss
             return this;
         }
 
-        private void StartUp() 
+        public BossWebServer ConfigureDistributedService<T>(T obj = null) where T : class, IDistributedService
         {
-            
+            if(obj != null) _configureDistributedService = (services) => services.AddSingleton<IDistributedService>(obj);
+            else _configureDistributedService = (services) => services.AddSingleton<IDistributedService, T>();
+            return this;
         }
+
+        public BossWebServer ConfigureServices(Action<IServiceCollection> action) { _configureServices = action; return this;}
     }
 }

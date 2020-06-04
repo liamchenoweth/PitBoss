@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -14,19 +15,20 @@ namespace JobContainer
 {
     public class Job
     {
-        public static void Main()
+        public static async Task Main()
         {
-            var host = StartJobServer(0);
-            host.WaitForShutdown();
+            CancellationTokenSource source = new CancellationTokenSource();
+            await StartJobServer(80, source.Token);
         }
 
-        public static IWebHost StartJobServer(int port)
+        public static async Task StartJobServer(int port, CancellationToken token)
         {
             OperationWebServer server = new OperationWebServer();
             var host = server.StartWebHost(port);
             var logger = host.Services.GetService<ILogger<Job>>();
-            logger.LogInformation($"Starting new job server on url: {host.ServerFeatures.Get<IServerAddressesFeature>().Addresses.FirstOrDefault()}");
-            return host;
+            logger.LogInformation($"Starting new job server on url: http://localhost:{port}");
+
+            await host.Services.GetService<IOperationService>().PollRequests(token);
         }
     }
 }

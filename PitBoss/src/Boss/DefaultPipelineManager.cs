@@ -33,7 +33,7 @@ namespace PitBoss {
         public IEnumerable<Pipeline> CompilePipelines(string directory)
         {
             var task = CompilePipelinesAsync(directory);
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -89,14 +89,15 @@ namespace PitBoss {
             var fullLoaction = Path.GetFullPath(location);
             var dir = Path.GetFullPath(Path.GetDirectoryName(location));
             PipelineLoadContext context = new PipelineLoadContext(dir);
-            var dll = context.LoadFromAssemblyPath(fullLoaction);
+            //var dll = context.LoadFromAssemblyPath(fullLoaction);
+            var dll = Assembly.LoadFile(fullLoaction);
 
             // Get all types that we care about
             // Then create the pipelines from those types
             // Finally set the DLL location so we can send it off to the workers
-            var types = dll.GetTypes().Where(x => typeof(IPipelineBuilder).IsAssignableFrom(x));
+            var types = dll.GetTypes().Where(x => x.GetInterfaces().Select(y => y.Name).Contains(typeof(IPipelineBuilder).Name));
             if(types.Count() == 0) throw new Exception($"No types that implement IPipelineBuilder found in {location}");
-            var buidlers = types.Select(x => Activator.CreateInstance(x) as IPipelineBuilder).Where(x => x != null).ToList();
+            var buidlers = types.Select(x => (IPipelineBuilder)Activator.CreateInstance(x)).Where(x => x != null).ToList();
             var pipelines = buidlers.Select(x => x.Build()).ToList();
             pipelines.ForEach(x => x.DllLocation = location);
             return pipelines;

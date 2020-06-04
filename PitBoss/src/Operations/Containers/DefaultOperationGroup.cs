@@ -1,7 +1,9 @@
+using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq;
+using Newtonsoft.Json;
 
 using PitBoss.Utils;
 namespace PitBoss
@@ -12,22 +14,30 @@ namespace PitBoss
         public int TargetSize {get; private set;}
         private List<IOperationContainer> _containers;
 
+        public DefaultOperationGroup() { _containers = new List<IOperationContainer>(); }
+
         public DefaultOperationGroup(PipelineStep step)
         {
             PipelineStep = step;
-            TargetSize = 1; // TODO: inform this from the step / config
+            TargetSize = step.TargetCount;
             _containers = new List<IOperationContainer>();
+        }
+
+        public void InflateFromDescription(IPipelineManager pipelineManager, GroupDescription description)
+        {
+            PipelineStep = pipelineManager.Pipelines.SelectMany(x => x.Steps).Where(x => x.Name == description.Name).First();
+            TargetSize = description.TargetSize;
         }
 
         public void SendRequest(OperationRequest request)
         {
-            SendRequestAsync(request).RunSynchronously();
+            SendRequestAsync(request).Wait();
         }
 
         public int CurrentSize()
         {
             var task = CurrentSizeAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -51,7 +61,7 @@ namespace PitBoss
         public IEnumerable<IOperationContainer> GetContainers()
         {
             var task = GetContainersAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -60,10 +70,20 @@ namespace PitBoss
             return _containers;
         }
 
+        public void SetContainers(IEnumerable<IOperationContainer> containers)
+        {
+            SetContainersAsync(containers).Wait();
+        }
+
+        public async Task SetContainersAsync(IEnumerable<IOperationContainer> containers)
+        {
+            _containers = containers.ToList();
+        }
+
         public IEnumerable<IOperationContainer> GetHealthyContainers()
         {
             var task = GetHealthyContainersAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -81,7 +101,7 @@ namespace PitBoss
         public IEnumerable<IOperationContainer> GetUnhealthyContainers()
         {
             var task = GetUnhealthyContainersAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -98,6 +118,7 @@ namespace PitBoss
 
         public async Task SendRequestAsync(OperationRequest request)
         {
+            Console.WriteLine(JsonConvert.SerializeObject(_containers));
             foreach(var container in _containers)
             {
                 var status = await container.GetContainerStatusAsync();
@@ -113,7 +134,7 @@ namespace PitBoss
         public IEnumerable<OperationStatus> GetStatuses()
         {
             var task = GetStatusesAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -130,7 +151,7 @@ namespace PitBoss
         public OperationGroupStatus GetGroupHealth()
         {
             var task = GetGroupHealthAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -172,7 +193,7 @@ namespace PitBoss
 
         public void AddContainer(IOperationContainer container)
         {
-            AddContainerAsync(container).RunSynchronously();
+            AddContainerAsync(container).Wait();
         }
 
         public async Task AddContainerAsync(IOperationContainer container)
@@ -183,7 +204,7 @@ namespace PitBoss
 
         public void RemoveContainer(IOperationContainer container)
         {
-            RemoveContainerAsync(container).RunSynchronously();
+            RemoveContainerAsync(container).Wait();
         }
 
         public async Task RemoveContainerAsync(IOperationContainer container)
@@ -195,7 +216,7 @@ namespace PitBoss
         public GroupDescription GetDescription()
         {
             var task = GetDescriptionAsync();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 

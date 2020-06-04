@@ -52,7 +52,7 @@ namespace PitBoss {
             var request = _db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
             if(request == null) throw new Exception($"Request with ID {response.PipelineId} not found");
             request.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
-            request.Response = response;
+            request.ResponseId = response.Id;
             _db.SaveChanges();
             _memoryService.GetCache().Set($"{DefaultOperationRequestManager.CachePrefix}:{response.PipelineId}", response);
         }

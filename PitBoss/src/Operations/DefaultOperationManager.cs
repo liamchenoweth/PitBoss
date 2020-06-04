@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Linq.Expressions;
 using System.Text;
 using Newtonsoft.Json;
@@ -9,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using PitBoss.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace PitBoss {
     public class DefaultOperationManager : IOperationManager
@@ -18,17 +20,19 @@ namespace PitBoss {
         public Type InputType {get; private set;}
         public Type OutputType {get; private set;}
         private const string CompilationOutput = "compiled";
-        private const string ResponseUri = "operation/result";
+        private const string ResponseUri = "api/operation/result";
         private IHttpClientFactory _clientFactory;
         private IOperationHealthManager _healthManager;
         private List<OperationRequest> _queuedRequests;
+        private ILogger<IOperationManager> _logger;
 
-        public DefaultOperationManager(IHttpClientFactory clientFactory, IOperationHealthManager healthManager)
+        public DefaultOperationManager(IHttpClientFactory clientFactory, IOperationHealthManager healthManager, ILogger<IOperationManager> logger)
         {
             _clientFactory = clientFactory;
             _previousRequests = new Dictionary<string, OperationRequest>();
             _healthManager = healthManager;
             _queuedRequests = new List<OperationRequest>();
+            _logger = logger;
         }
 
         public bool Ready {get; private set;}
@@ -58,7 +62,7 @@ namespace PitBoss {
         public OperationRequest DeserialiseRequest(Stream requestJson)
         {
             var task = DeserialiseRequestAsync(requestJson);
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
 
@@ -84,7 +88,7 @@ namespace PitBoss {
 
         public void FinishRequest(OperationRequest request, object output, bool failed)
         {
-            FinishRequestAsync(request, output, failed).RunSynchronously();
+            FinishRequestAsync(request, output, failed).Wait();
         }
 
         public async Task FinishRequestAsync(OperationRequest request, object output, bool failed)
@@ -113,13 +117,17 @@ namespace PitBoss {
             var fullLoaction = Path.GetFullPath(compiledOperation);
             var dir = Path.GetFullPath(Path.GetDirectoryName(compiledOperation));
             OperationLoadContext context = new OperationLoadContext(dir);
-            var dll = context.LoadFromAssemblyPath(fullLoaction);
+            //var dll = context.LoadFromAssemblyPath(fullLoaction);
+            var dll = Assembly.LoadFile(fullLoaction);
 
             // Get all types that we care about
             // Then create the Operations from those types
             // Finally set the DLL location so we can send it off to the workers
             var types = dll.GetTypes().Where(x => typeof(IOperation).IsAssignableFrom(x));
-            if(types.Count() == 0) return;
+            if(types.Count() == 0) {
+                 _logger.LogWarning($"No types of IOperation found for {location}");
+                 return;
+            }
             if(types.Count() != 1) throw new Exception($"Too many types that implement IOperation found in {location}, {types.Count()} found, 1 expected");
             var type = types.First();
             var inter = type.GetInterfaces().Where(i => i.IsGenericType).First();
@@ -150,7 +158,7 @@ namespace PitBoss {
         public void CompileOperation(string location)
         {
             var task = CompileOperationAsync(location);
-            task.RunSynchronously();
+            task.Wait();
         }
     }
 }

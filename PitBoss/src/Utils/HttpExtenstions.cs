@@ -9,13 +9,14 @@ namespace PitBoss.Extensions
         public static async Task<T> DeserialiseAsync<T>(this HttpContent content)
         {
             // Using newtonsoft here because dotnet core implementation doesn't work well with enums
-            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await content.ReadAsStringAsync()));
+            var stringContent = await content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<T>(stringContent);
         }
 
         public static T Deserialise<T>(this HttpContent content)
         {
             var task = content.DeserialiseAsync<T>();
-            task.RunSynchronously();
+            task.Wait();
             return task.Result;
         }
     }

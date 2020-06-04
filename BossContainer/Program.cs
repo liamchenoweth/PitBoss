@@ -1,62 +1,60 @@
 using System;
-using System.Net;
-using System.Reflection;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-using PitBoss;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using PitBoss.Utils;
-using Serilog;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Hosting;
 
-namespace BossContainer
+namespace PitBoss
 {
     public class Boss
     {
-        public static void Main(string[] args)
+        public async static Task Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
-        }
-
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
-        {
-            Assembly _callingAssembly = Assembly.GetExecutingAssembly();
+            CancellationTokenSource source = new CancellationTokenSource();
+            var configPath = Environment.GetEnvironmentVariable("PITBOSS_CONFIGURATION");
             var config = new ConfigurationBuilder()
-                .AddJsonFile("configuration/defaultConfiguration.json", false, true)
-                // Allow provided configuration from user
-                // TODO: inform this location some other way (maybe env var?)
-                .AddJsonFile("configuration/configuration.json", true, true)
+                .AddJsonFile(Path.IsPathRooted(configPath) ? configPath : $"{FileUtils.GetBasePath()}/{configPath}", false, true)
                 .Build();
-
-            var host = new WebHostBuilder()
-                .UseConfiguration(config)
-                .UseSerilog(LoggingUtils.ConfigureSerilog())
-                .UseKestrel(options => {
-                    var urls = new List<string>();
-                    var kestrelSettings = config.GetSection("Kestrel");
-                    kestrelSettings.Bind("Urls", urls);
-                    foreach(var url in urls){
-                        Uri uri = new Uri(url);
-                        if(uri.Host == "localhost"){
-                            options.ListenLocalhost(uri.Port);
-                        }else {
-                            options.Listen(IPAddress.Parse(uri.Host), uri.Port);
-                        }
-                    }
-                })
-                .ConfigureServices(services => {
-                    
-                    var mvcOptions = services.AddControllers();
-                    mvcOptions.PartManager.ApplicationParts.Clear();
-                    mvcOptions.AddApplicationPart(_callingAssembly);
-                    mvcOptions.AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-                    services.AddSingleton<IContainerManager, DefaultContainerManager>();
-                    services.AddSingleton<IContainerBalancer, DefaultContainerBalancer>();
-                })
-                .UseStartup<BossWebServerConfiguration>();
-
-            return host;
+            await StartServiceServer(config.GetValue<int>("OperationGroupContainer:Port"), source.Token);
         }
+
+        public static async Task StartServiceServer(int port, CancellationToken token)
+        {
+            BossWebServer server = new BossWebServer();
+            var host = server.StartWebHost("0.0.0.0", port);
+            var logger = host.Services.GetService<ILogger<Boss>>();
+            logger.LogInformation($"Starting new Container Service server on url: http://localhost:{port}");
+            // Compile pipelines
+            var pipelineLocation = host.Services.GetService<IConfiguration>()["Boss:Pipelines:Location"];
+            if(!Path.IsPathRooted(pipelineLocation))
+            {
+                pipelineLocation = $"{FileUtils.GetBasePath()}/{pipelineLocation}";
+            }
+            await host.Services.GetService<IPipelineManager>().CompilePipelinesAsync(pipelineLocation);
+            await host.WaitForShutdownAsync();
+        }
+
+        #if LOCAL_DEV
+        public static async Task StartServiceServer(int port, IDistributedService memoryService, CancellationToken token)
+        {
+            BossWebServer server = new BossWebServer();
+            server.ConfigureDistributedService(memoryService);
+            var host = server.StartWebHost("0.0.0.0", port);
+            var logger = host.Services.GetService<ILogger<Boss>>();
+            logger.LogInformation($"Starting new Container Service server on url: http://localhost:{port}");
+            // Compile pipelines
+            var pipelineLocation = host.Services.GetService<IConfiguration>()["Boss:Pipelines:Location"];
+            if(!Path.IsPathRooted(pipelineLocation))
+            {
+                pipelineLocation = $"{FileUtils.GetBasePath()}/{pipelineLocation}";
+            }
+            await host.Services.GetService<IPipelineManager>().CompilePipelinesAsync(pipelineLocation);
+            await host.WaitForShutdownAsync();
+        }
+        #endif
     }
 }

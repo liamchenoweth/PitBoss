@@ -38,7 +38,7 @@ namespace PitBoss {
             var requestString = $"{CachePrefix}:{pipelineStep.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             request.Status = RequestStatus.Pending;
-            request.CallbackUri = $"{_configuration["Boss:Callback:Scheme"]}://{_configuration["Boss:Callback:Uri"]}";
+            request.CallbackUri = $"{_configuration["Boss:Host:Scheme"]}://{_configuration["Boss:Host:Uri"]}:{_configuration["Boss:Host:Port"]}";
             if(!_db.OperationRequests.Contains(request))
             {
                 _db.OperationRequests.Add(request);
@@ -92,6 +92,8 @@ namespace PitBoss {
             request.PipelineId = response.PipelineId;
             request.PipelineName = response.PipelineName;
             request.PipelineStepId = nextStep;
+            request.ParentRequestId = dbRequest.ParentRequestId;
+            request.InstigatingRequestId = dbRequest.Id;
             var resp = response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == response.GetType()).GetGetMethod().Invoke(response, null);
             request.GetType().GetProperty("Parameter").GetSetMethod().Invoke(request, new object[] { resp });
             QueueRequest(request);
@@ -126,7 +128,6 @@ namespace PitBoss {
             dbRequest.Started = default;
             try
             {
-                Console.WriteLine("test");
                 _db.SaveChanges();
             }catch(Exception e)
             {

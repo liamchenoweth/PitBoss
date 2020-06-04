@@ -25,25 +25,40 @@ namespace PitBoss {
         [HttpPost("operation/script")]
         public async Task<ActionResult> RecieveScript(List<IFormFile> executionScript) 
         {
-            var baseLocation = "OperationContainer";
-            Directory.CreateDirectory(baseLocation);
+            var baseLocation = "OperationContainer/";
+            try
+            {
+                Directory.CreateDirectory(baseLocation);
+            }catch(Exception e){
+                // ignore this, it already exists
+                // maybe add some debug logging
+            }
             foreach(var file in executionScript)
             {
                 if(file.Length > 0)
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName($"{baseLocation}/{file.FileName}"));
-                    using(var fileStream = new FileStream($"{baseLocation}/{file.FileName}", FileMode.Create))
+                    try
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName($"{baseLocation}{file.FileName}"));
+                    }catch(Exception e)
+                    {
+                        // ignore this, it already exists
+                        // maybe add some debug logging
+                    }
+                    if(Path.IsPathRooted(file.FileName)) baseLocation = "";
+                    Console.WriteLine($"{baseLocation}{file.FileName}");
+                    using(var fileStream = new FileStream($"{baseLocation}{file.FileName}", FileMode.Create))
                     {
                         await file.CopyToAsync(fileStream);
                     }
-                    await _operationManager.CompileOperationAsync($"{baseLocation}/{file.FileName}");
+                    await _operationManager.CompileOperationAsync($"{baseLocation}{file.FileName}");
                 }
             }
             return Ok();
         }
 
         [HttpPost("operation/request")]
-        public OperationRequestStatus RequestOperation([FromBody]JObject jrequest) 
+        public async Task<OperationRequestStatus> RequestOperation([FromBody]JObject jrequest) 
         {
             var requestType = typeof(OperationRequest<>).MakeGenericType(new Type[] {_operationManager.InputType});
             var request = (OperationRequest)jrequest.ToObject(requestType);

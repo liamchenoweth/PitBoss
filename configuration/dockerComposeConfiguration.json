@@ -1,0 +1,60 @@
+{
+    "ContainerService": {
+        "Uri": "container-service",
+        "Port": "80",
+        "Scheme": "http"
+    },
+    "OperationGroupContainer": {
+        "Uri": "operation-group-service",
+        "Port": "80",
+        "Scheme": "http"
+    },
+    "DistributedStepContainer": {
+        "Uri": "distributed-step-service",
+        "Port": "80",
+        "Scheme": "http"
+    },
+    "Boss": {
+        "Host": {
+            "Uri": "boss-container",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "Pipelines":
+        {
+            "ContainerCountAggregator": "Maximum",
+            "Location": "/app/scripts/pipelines"
+        },
+        "Scripts":
+        {
+            "AdditionalLocations": [
+                "/app/scripts/additions"
+            ],
+            "Location": "/app/scripts/steps"
+        },
+        "Cache": {
+            "UseCache": "Redis",
+            "Redis": {
+                "Host": "redis",
+                "Port": 6379
+            }
+        },
+        "Database":
+        {
+            "UseDatabase": "Postgres",
+            "Postgres": {
+                "Host": "postgres",
+                "Port": 5432,
+                "Database": "pitboss",
+                "Username": "pitboss",
+                "Password": "pitboss"
+            },
+            "SQLite": {
+                "Data Source": "database.db"
+            }
+        }
+    },
+    "Operations": {
+        "Image": "default_operation_container"
+    }   
+}

@@ -1,16 +1,18 @@
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Npgsql;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using PitBoss.Utils;
 
 namespace PitBoss
 {
-    public class BossContext : DbContext
+    public abstract class BossContext : DbContext
     {
-        private string _connectionString;
-        private IConfiguration _configuration;
+        protected IConfiguration _configuration;
         public DbSet<PipelineRequest> PipelineRequests { get; set; }
         public DbSet<OperationRequest> OperationRequests { get; set; }
         public DbSet<OperationResponse> OperationResponses { get; set; }
@@ -22,20 +24,22 @@ namespace PitBoss
             _configuration = configuration;
         }
 
-        public BossContext(string connectionString) : base()
-        {
-            _connectionString = connectionString;
-        }
-
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            if(!string.IsNullOrEmpty(_connectionString))
+            switch(_configuration["Boss:Database:UseDatabase"])
             {
-                options.UseSqlite(_connectionString);
-            }
-            else
-            {
-                options.UseSqlite(_configuration["Boss:Database:ConnectionString"]);
+                case "Postgres":
+                    var stringBuilder = new NpgsqlConnectionStringBuilder();
+                    stringBuilder.Host = _configuration["Boss:Database:Postgres:Host"];
+                    stringBuilder.Port = _configuration.GetValue<int>("Boss:Database:Postgres:Port");
+                    stringBuilder.Database = _configuration["Boss:Database:Postgres:Database"];
+                    stringBuilder.Username = _configuration["Boss:Database:Postgres:Username"];
+                    stringBuilder.Password = _configuration["Boss:Database:Postgres:Password"];
+                    options.UseNpgsql(stringBuilder.ToString());
+                    break;
+                default:
+                    options.UseSqlite(_configuration["Boss:Database:SQLite"]);
+                    break;
             }
         }
 
@@ -60,19 +64,6 @@ namespace PitBoss
             }
 
             return base.SaveChanges();
-        }
-    }
-
-    public class BossContextFactory : IDesignTimeDbContextFactory<BossContext>
-    {
-        public BossContext CreateDbContext(string[] args)
-        {
-            var configuration = new ConfigurationBuilder().AddJsonFile("configuration/defaultConfiguration.json", false, true).Build();
-            if(configuration.GetValue<bool>("Library"))
-            {
-                return new BossContext("library.db");
-            }
-            return new BossContext(configuration);
         }
     }
 }

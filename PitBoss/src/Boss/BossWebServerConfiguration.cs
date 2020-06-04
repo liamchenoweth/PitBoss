@@ -31,11 +31,6 @@ namespace PitBoss
             var providers = new LoggerProviderCollection();
 
             Log.Logger = LoggingUtils.ConfigureSerilog();
-
-            services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
-            services.AddSingleton<IDistributedService, MemoryDistributedService>();
-            services.AddTransient<IDistributedRequestManager, DefaultDistributedRequestManager>();
-            services.AddSingleton(providers);
             services.AddSingleton<ILoggerFactory>(sc => {
                 var providerCollection = sc.GetService<LoggerProviderCollection>();
                 var factory = new SerilogLoggerFactory(null, true, providerCollection);
@@ -46,17 +41,30 @@ namespace PitBoss
                 return factory;
             });
 
+            ConfigureCache(services);
+
+            services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
+            //services.AddSingleton<IDistributedService, MemoryDistributedService>();
+            services.AddTransient<IDistributedRequestManager, DefaultDistributedRequestManager>();
+            services.AddSingleton(providers);
+
             services.AddTransient<IPipelineRequestManager, DefaultPipelineRequestManager>();
             services.AddTransient<IOperationRequestManager, DefaultOperationRequestManager>();
 
             services.AddRouting();
             services.AddHttpClient();
-            services.AddDbContext<BossContext>();
+            switch(_config["Boss:Database:UseDatabase"])
+            {
+                case "Postgres":
+                    services.AddDbContext<BossContext, PostgresContext>(ServiceLifetime.Transient);
+                    break;
+                case "Sqlite":
+                default:
+                    services.AddDbContext<BossContext, SqliteContext>(ServiceLifetime.Transient);
+                    break;
+            }
             services.AddLogging(l => l.AddConsole());
             // Hosted Services
-            services.AddHostedService<OperationGroupService>();
-            services.AddHostedService<ContainerService>();
-            services.AddHostedService<DistributedStepService>();
             services.AddControllers().AddNewtonsoftJson(options => {
               options.SerializerSettings.Converters.Add(new StringEnumConverter());
               options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
@@ -65,10 +73,31 @@ namespace PitBoss
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
+                endpoints.MapFallbackToFile("index.html");
             });
+        }
+
+        private void ConfigureCache(IServiceCollection services)
+        {
+            switch(_config["Boss:Cache:UseCache"])
+            {
+                case "Redis":
+                    services.AddSingleton<IDistributedService, RedisDistributedService>();
+                    break;
+                case "Memory":
+                    services.AddSingleton<IDistributedService, MemoryDistributedService>();
+                    break;
+                case "PreCreated":
+                    return;
+                default:
+                    services.AddSingleton<IDistributedService, MemoryDistributedService>();
+                    break;
+            }
         }
     }
 }

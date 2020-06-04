@@ -24,18 +24,18 @@ namespace PitBoss
         public IWebHost StartWebHost(int port)
         {
             _callingAssembly = Assembly.GetCallingAssembly();
-            var config = new ConfigurationBuilder()
-                .AddJsonFile("configuration/defaultConfiguration.json", false, true)
-                // Allow provided configuration from user
-                // TODO: inform this location some other way (maybe env var?)
-                .AddJsonFile("configuration/configuration.json", true, true)
-                .Build();
+            // var config = new ConfigurationBuilder()
+            //     .AddJsonFile($"{FileUtils.GetBasePath()}/configuration/defaultConfiguration.json", false, true)
+            //     // Allow provided configuration from user
+            //     // TODO: inform this location some other way (maybe env var?)
+            //     .AddJsonFile("configuration/configuration.json", true, true)
+            //     .Build();
 
             var host = new WebHostBuilder()
-                .UseConfiguration(config)
+                //.UseConfiguration(config)
                 .UseSerilog(LoggingUtils.ConfigureSerilog())
                 .UseKestrel(options => {
-                    options.Listen(new IPAddress(new byte[] {127,0,0,1}), port);
+                    options.Listen(new IPAddress(new byte[] {0,0,0,0}), port);
                 })
                 .ConfigureServices(services => {
                     var mvcOptions = services.AddControllers();

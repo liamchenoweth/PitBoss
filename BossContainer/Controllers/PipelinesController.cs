@@ -1,9 +1,12 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Net.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 using PitBoss.Utils;
+using PitBoss.Extensions;
 
 namespace PitBoss
 {
@@ -11,36 +14,39 @@ namespace PitBoss
     {
         private IPipelineManager _pipelineManager;
         private IPipelineRequestManager _requestManager;
-        private IContainerManager _containerManager;
+        private IHttpClientFactory _clientFactory;
+        private IConfiguration _configuration;
         public PipelinesController(
             IPipelineManager pipelineManager, 
             IPipelineRequestManager requestManager,
-            IContainerManager containerManager)
+            IHttpClientFactory clientFactory,
+            IConfiguration configuration)
         {
-            _containerManager = containerManager;
             _pipelineManager = pipelineManager;
             _requestManager = requestManager;
+            _clientFactory = clientFactory;
+            _configuration = configuration;
         }
 
-        [HttpGet("pipelines")]
+        [HttpGet("api/pipelines")]
         public ActionResult GetPipelines()
         {
             return Ok(_pipelineManager.Pipelines.Select(x => x.Description));
         }
 
-        [HttpGet("pipelines/{name}")]
+        [HttpGet("api/pipelines/{name}")]
         public ActionResult GetPipeline(string name)
         {
             return Ok(_pipelineManager.GetPipeline(name));
         }
 
-        [HttpGet("pipelines/{name}/requests")]
+        [HttpGet("api/pipelines/{name}/requests")]
         public ActionResult PipelineRequests(string name)
         {
             return Ok(_requestManager.RequestsForPipeline(name));
         }
 
-        [HttpGet("pipelines/{name}/health")]
+        [HttpGet("api/pipelines/{name}/health")]
         public async Task<ActionResult> PipelineHealth(string name)
         {
             var pipeline = _pipelineManager.GetPipeline(name);
@@ -48,29 +54,14 @@ namespace PitBoss
             var stepHealth = new List<PipelineStepStatus>();
             foreach(var step in pipeline.Steps)
             {
-                var group = await _containerManager.GetContainersByStepAsync(step);
-                var statuses = await group.GetStatusesAsync();
-                if(statuses.Where(x => !x.Healthy).Count() > 0)
-                {
-                    if(statuses.Where(x => !x.Healthy).Count() == statuses.Count())
-                    {
-                        stepHealth.Add(new PipelineStepStatus{
-                            PipelineStepName = step.Name,
-                            Health = Health.Unhealthy
-                        });
-                        continue;
-                    }
-                    stepHealth.Add(new PipelineStepStatus{
-                        PipelineStepName = step.Name,
-                        Health = Health.Warning
-                    });
-                    continue;
-                }
-                stepHealth.Add(new PipelineStepStatus{
-                    PipelineStepName = step.Name,
-                    Health = Health.Healthy
-                });
-                continue;
+                stepHealth.Add(
+                    await (
+                        await _clientFactory
+                        .CreateClient()
+                        .GetAsync($"{_configuration["ContainerService:Scheme"]}://{_configuration["ContainerService:Uri"]}:{_configuration["ContainerService:Port"]}/operations/{step.Name}/health"))
+                        .Content
+                        .DeserialiseAsync<PipelineStepStatus>()
+                    );
             }
             return Ok(new PipelineStatus{
                 PipelineName = pipeline.Name,

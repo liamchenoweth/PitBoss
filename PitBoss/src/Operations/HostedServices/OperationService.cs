@@ -1,26 +1,27 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace PitBoss
 {
-    public class OperationService : BackgroundService
+    public class OperationService : IOperationService
     {
         private IOperationManager _operationManager;
         private IOperationHealthManager _healthManager;
         private ILogger _logger;
-        private IHostApplicationLifetime _lifetime;
-        public OperationService(IOperationManager operationManager, ILogger<OperationService> logger, IOperationHealthManager healthManager, IHostApplicationLifetime lifetime)
+
+        public OperationService(
+            IOperationManager operationManager, 
+            ILogger<OperationService> logger, 
+            IOperationHealthManager healthManager)
         {
             _operationManager = operationManager;
             _healthManager = healthManager;
             _logger = logger;
-            _lifetime = lifetime;
         }
 
-        protected async override Task ExecuteAsync(CancellationToken cancelationToken)
+        public async Task PollRequests(CancellationToken cancelationToken)
         {
             _logger.LogInformation("Begining operation container");
             while(!_operationManager.Ready)

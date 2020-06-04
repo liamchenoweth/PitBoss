@@ -5,6 +5,7 @@ namespace PitBoss
 {
     public interface IOperationGroup : IEnumerable<IOperationContainer>
     {
+        void InflateFromDescription(IPipelineManager manager, GroupDescription descriptions);
         PipelineStep PipelineStep {get;}
         int CurrentSize();
         Task<int> CurrentSizeAsync();
@@ -17,6 +18,8 @@ namespace PitBoss
         Task<OperationGroupStatus> GetGroupHealthAsync();
         void AddContainer(IOperationContainer container);
         void RemoveContainer(IOperationContainer container);
+        void SetContainers(IEnumerable<IOperationContainer> containers);
+        Task SetContainersAsync(IEnumerable<IOperationContainer> containers);
         Task AddContainerAsync(IOperationContainer container);
         Task RemoveContainerAsync(IOperationContainer container);
         IEnumerable<IOperationContainer> GetHealthyContainers();

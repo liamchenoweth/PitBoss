@@ -8,6 +8,6 @@ namespace PitBoss
     }
     public class DistributedStep<InArg, OutArg> : PipelineStep<IEnumerable<InArg>, IEnumerable<OutArg>> 
     {
-        public DistributedStep(string script_name) : base(script_name) {}
+        public DistributedStep(string script_name, PipelineStepOptions options = null) : base(script_name, options) {}
     }
 }

@@ -52,6 +52,6 @@ namespace PitBoss.Utils
             }
         }
 
-        public static void CompileScript(string location, string outLocation) => CompileScriptAsync(location, outLocation).RunSynchronously();
+        public static void CompileScript(string location, string outLocation) => CompileScriptAsync(location, outLocation).Wait();
     }
 }

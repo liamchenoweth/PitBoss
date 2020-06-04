@@ -17,6 +17,14 @@ namespace PitBoss
             _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
         }
 
+        public MemoryDistributedService(
+            ConcurrentDictionary<string, ConcurrentQueue<string>> queues, 
+            MemoryDistributedCache cache)
+        {
+            _queues = queues;
+            _cache = cache;
+        }
+
         public IDistributedQueue<T> GetQueue<T>(string queue)
         {
             if(!_queues.ContainsKey(queue)) _queues[queue] = new ConcurrentQueue<string>();

@@ -3,6 +3,12 @@ using System.Linq;
 using System.Collections.Generic;
 
 namespace PitBoss {
+    public class PipelineStepOptions
+    {
+        public string DisplayName {get;set;}
+        public int TargetCount {get;set;}
+    }
+
     public class PipelineStep {
         internal PipelineStep() 
         {
@@ -10,9 +16,11 @@ namespace PitBoss {
             NextSteps = new List<string>();
             IsBranch = false;
         }
-        public PipelineStep(string script_name)
+        public PipelineStep(string script_name, PipelineStepOptions options = null)
         {
             Name = script_name;
+            DisplayName = options?.DisplayName ?? Name;
+            TargetCount = options?.TargetCount ?? 1;
             Input = null;
             Output = null;
             Id = Guid.NewGuid().ToString();
@@ -24,6 +32,8 @@ namespace PitBoss {
         public string BranchEndId {get; protected set;}
         public string Id {get; protected set;}
         public string Name {get; protected set;}
+        public string DisplayName {get; protected set;}
+        public int TargetCount {get; protected set;}
         public Type Input {get; protected set;}
         public Type Output {get; protected set;}
         public bool IsDistributedStart {get; internal set;}
@@ -59,28 +69,34 @@ namespace PitBoss {
             Output = typeof(OutArg);
         }
 
-        public PipelineStep(string script_name) {
+        public PipelineStep(string script_name, PipelineStepOptions options = null) {
             Name = script_name;
             Input = typeof(InArg);
             Output = typeof(OutArg);
+            DisplayName = options?.DisplayName ?? Name;
+            TargetCount = options?.TargetCount ?? 1;
         }
     }
 
     public class PipelineStepNullOutput<InArg> : PipelineStep {
-        public PipelineStepNullOutput(string script_name)
+        public PipelineStepNullOutput(string script_name, PipelineStepOptions options = null)
         {
             Name = script_name;
             Input = typeof(InArg);
             Output = null;
+            DisplayName = options?.DisplayName ?? Name;
+            TargetCount = options?.TargetCount ?? 1;
         }
     }
 
     public class PipelineStepNullInput<OutArg> : PipelineStep {
-        public PipelineStepNullInput(string script_name)
+        public PipelineStepNullInput(string script_name, PipelineStepOptions options = null)
         {
             Name = script_name;
             Output = typeof(OutArg);
             Input = null;
+            DisplayName = options?.DisplayName ?? Name;
+            TargetCount = options?.TargetCount ?? 1;
         }
     }
 }

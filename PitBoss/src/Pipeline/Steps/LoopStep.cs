@@ -9,7 +9,7 @@ namespace PitBoss
     public class LoopStep<TIn, TOut> : PipelineStep<TIn, TOut> where TOut : ILoopEnd
     {
         public string LoopStart {get;private set;}
-        public LoopStep(string script) : base(script)
+        public LoopStep(string script, PipelineStepOptions options = null) : base(script, options)
         {
         }
 
