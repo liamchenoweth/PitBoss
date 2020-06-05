@@ -17,6 +17,7 @@ services:
       dockerfile: _deployment/DbUpDockerfile
     environment:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+      DB_CONTEXT: Postgres
   boss-container:
     build: 
       context: ../

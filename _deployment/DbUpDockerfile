@@ -7,4 +7,4 @@ RUN dotnet restore
 COPY ./configuration ./configuration
 COPY ./scripts ./scripts
 RUN dotnet tool install dotnet-ef --tool-path /usr/bin
-CMD ["dotnet", "ef", "database", "update", "--context", "PostgresContext"]
+CMD ["dotnet", "ef", "database", "update", "--context", "${DB_CONTEXT}Context"]

@@ -58,6 +58,12 @@ namespace PitBoss
                 case "Postgres":
                     services.AddDbContext<BossContext, PostgresContext>(ServiceLifetime.Transient);
                     break;
+                case "MySql":
+                    services.AddDbContext<BossContext, MySqlContext>(ServiceLifetime.Transient);
+                    break;
+                case "MSSQL":
+                    services.AddDbContext<BossContext, MSSQLContext>(ServiceLifetime.Transient);
+                    break;
                 case "Sqlite":
                 default:
                     services.AddDbContext<BossContext, SqliteContext>(ServiceLifetime.Transient);

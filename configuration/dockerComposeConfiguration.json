@@ -49,6 +49,20 @@
                 "Username": "pitboss",
                 "Password": "pitboss"
             },
+            "MySql": {
+                "Server": "postgres",
+                "Port": 5432,
+                "Database": "pitboss",
+                "Username": "pitboss",
+                "Password": "pitboss"
+            },
+            "MSSQL": {
+                "Server": "postgres",
+                "Port": 5432,
+                "Database": "pitboss",
+                "Username": "pitboss",
+                "Password": "pitboss"
+            },
             "SQLite": {
                 "Data Source": "database.db"
             }
