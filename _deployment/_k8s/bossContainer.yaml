@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boss-container
+spec:
+  selector:
+    matchLabels:
+      app: boss
+  template:
+    metadata:
+      labels:
+        app: boss
+    spec:
+      containers:
+      - name: boss
+        image: pitboss:boss-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: "/app/configuration/configuration.json"
+      volumes:
+        - name: configuration
+          secret:
+            secretName: pitboss-configuration
+        - name: scripts
+          hostPath:
+              path: /Projects/PitBoss/scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boss-service
+spec:
+  selector:
+    app: boss
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

@@ -81,7 +81,7 @@ namespace PitBoss {
                         }
                     }
                 }
-                await Task.Delay(5000);
+                await Task.Delay(100);
             }
             _logger.LogInformation("Shutting down the Operation service");
             // Do our shutdown tasks

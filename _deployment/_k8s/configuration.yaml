@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pitboss-configuration
+type: Opaque
+stringData:
+  configuration.json: |-
+      {
+        "ContainerService": {
+            "Uri": "container-service-service",
+            "Port": "80",
+            "Scheme": "http",
+            "Containers": {
+                "Namespace": "default"
+            }
+        },
+        "OperationGroupContainer": {
+            "Uri": "operation-group-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "DistributedStepContainer": {
+            "Uri": "distributed-step-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "Boss": {
+            "Host": {
+                "Uri": "boss-service",
+                "Port": "80",
+                "Scheme": "http"
+            },
+            "Pipelines":
+            {
+                "ContainerCountAggregator": "Maximum",
+                "Location": "/app/scripts/pipelines"
+            },
+            "Scripts":
+            {
+                "AdditionalLocations": [
+                    "/app/scripts/additions"
+                ],
+                "Location": "/app/scripts/steps"
+            },
+            "Cache": {
+                "UseCache": "Redis",
+                "Redis": {
+                    "Host": "redis",
+                    "Port": 6379
+                }
+            },
+            "Database":
+            {
+                "UseDatabase": "Postgres",
+                "Postgres": {
+                    "Host": "postgres",
+                    "Port": 5432,
+                    "Database": "pitboss",
+                    "Username": "pitboss",
+                    "Password": "pitboss"
+                }
+            }
+        },
+        "Operations": {
+            "Image": "pitboss:operation-latest"
+        }   
+      }

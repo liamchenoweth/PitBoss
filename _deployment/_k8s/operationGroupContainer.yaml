@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operation-group-container
+spec:
+  selector:
+    matchLabels:
+      app: operation-group
+  template:
+    metadata:
+      labels:
+        app: operation-group
+    spec:
+      containers:
+      - name: operation-group
+        image: pitboss:operation-group-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: "/app/configuration/configuration.json"
+      volumes:
+        - name: configuration
+          secret:
+            secretName: pitboss-configuration
+        - name: scripts
+          hostPath:
+              path: /Projects/PitBoss/scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: operation-group-service
+spec:
+  selector:
+    app: operation-group
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

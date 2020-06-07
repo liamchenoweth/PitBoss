@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distributed-step-container
+spec:
+  selector:
+    matchLabels:
+      app: distributed-step
+  template:
+    metadata:
+      labels:
+        app: distributed-step
+    spec:
+      containers:
+      - name: distributed-step
+        image: pitboss:distributed-step-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: "/app/configuration/configuration.json"
+      volumes:
+        - name: configuration
+          secret:
+            secretName: pitboss-configuration
+        - name: scripts
+          hostPath:
+              path: /Projects/PitBoss/scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: distributed-step-service
+spec:
+  selector:
+    app: distributed-step
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dbup
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: dbup
+        image: pitboss:dbup-latest
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: "/app/configuration/configuration.json"
+          - name: DB_CONTEXT
+            value: "Postgres"
+      volumes:
+        - name: configuration
+          secret:
+            secretName: pitboss-configuration

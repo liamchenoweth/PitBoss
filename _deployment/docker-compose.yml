@@ -34,6 +34,7 @@ services:
     container_name: container-service
     environment:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+      PITBOSS_IMPLEMENTATION: DOCKER_COMPOSE
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   distributed-step-container:

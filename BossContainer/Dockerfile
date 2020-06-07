@@ -19,8 +19,6 @@ RUN npm run build
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
 RUN dotnet tool install dotnet-script --tool-path /usr/bin
 WORKDIR /app
-COPY ./configuration ./configuration
-COPY ./scripts ./scripts
 COPY --from=build-env /app/out .
 COPY --from=web-env /web-app/build ./wwwroot
 EXPOSE 80

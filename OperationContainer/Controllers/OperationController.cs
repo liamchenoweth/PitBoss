@@ -22,36 +22,38 @@ namespace PitBoss {
             _healthManager = healthManager;
         }
 
+        private void ensureLocation(string location)
+        {
+            var folders = location.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            var current = "/";
+            foreach(var folder in folders)
+            {
+                current = Path.Join(current, folder);
+                if(Directory.Exists(current) || System.IO.File.Exists(current))
+                {
+                    continue;
+                }
+                Directory.CreateDirectory(current);
+            }
+        }
+
         [HttpPost("operation/script")]
         public async Task<ActionResult> RecieveScript(List<IFormFile> executionScript) 
         {
             var baseLocation = "OperationContainer/";
-            try
-            {
-                Directory.CreateDirectory(baseLocation);
-            }catch(Exception e){
-                // ignore this, it already exists
-                // maybe add some debug logging
-            }
             foreach(var file in executionScript)
             {
                 if(file.Length > 0)
                 {
-                    try
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName($"{baseLocation}{file.FileName}"));
-                    }catch(Exception e)
-                    {
-                        // ignore this, it already exists
-                        // maybe add some debug logging
-                    }
                     if(Path.IsPathRooted(file.FileName)) baseLocation = "";
-                    Console.WriteLine($"{baseLocation}{file.FileName}");
-                    using(var fileStream = new FileStream($"{baseLocation}{file.FileName}", FileMode.Create))
+                    var location = Path.GetFullPath($"{baseLocation}{file.FileName}");
+                    ensureLocation(Directory.GetParent(location).FullName);
+                    Console.WriteLine(location);
+                    using(var fileStream = new FileStream(location, FileMode.Create))
                     {
                         await file.CopyToAsync(fileStream);
                     }
-                    await _operationManager.CompileOperationAsync($"{baseLocation}{file.FileName}");
+                    await _operationManager.CompileOperationAsync(location);
                 }
             }
             return Ok();
