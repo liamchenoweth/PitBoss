@@ -19,7 +19,8 @@ namespace PitBoss
             // TODO: Allow multiple redis connections for HA
             // TODO: Add extra options
             var redisOptions = new ConfigurationOptions {
-                EndPoints = {{ _configuration["Boss:Cache:Redis:Host"], _configuration.GetValue<int>("Boss:Cache:Redis:Port") }}
+                EndPoints = {{ _configuration["Boss:Cache:Redis:Host"], _configuration.GetValue<int>("Boss:Cache:Redis:Port") }},
+                Password = _configuration["Boss:Cache:Redis:Password"]
             };
             _redis = ConnectionMultiplexer.Connect(redisOptions);
             _cache = new RedisCache(new RedisCacheOptions()

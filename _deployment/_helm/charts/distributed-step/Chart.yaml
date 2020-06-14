@@ -1,0 +1,6 @@
+apiVersion: v2
+name: distributed-step
+description: the service that monitors the distributed steps for pitboss
+type: application
+version: 1.0.0
+appVersion: 1.0.0

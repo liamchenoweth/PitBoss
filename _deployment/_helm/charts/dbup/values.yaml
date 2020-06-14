@@ -1,0 +1,20 @@
+# Additional labels to add to the deployment and pod
+# additionalLabels:
+#   label: value
+
+# The image to be used for this deployment
+image: pitboss:dbup-latest
+# The type of database to initialise
+# available types are Postgres, MySql, MSSQL
+dbContext: "Postgres"
+# Values for service configuration
+configuration:
+#   location of the configuration file in the container
+  location: /app/configuration/configuration.json
+#   Where the configuration volume will be mounted
+  volumeLocation: /app/configuration
+#   how the configuration is mounted to the container
+#   valid values are configmap or secret
+  type: configmap
+#   if you have a precreated secret or configmap, add it's name here
+#   name: configuration

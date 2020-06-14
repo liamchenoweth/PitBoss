@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boss
+  labels:
+    app: boss
+    {{ if .Values.additionalLabels }}
+{{ .Values.additionalLabels | toYaml }}
+{{ end }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: boss
+  template:
+    metadata:
+      labels:
+        app: boss
+        {{ if .Values.additionalLabels }}
+{{ .Values.additionalLabels | toYaml }}
+{{ end }}
+    spec:
+      containers:
+      - name: boss
+        image: {{ .Values.image | default "pitboss:boss-latest" }}
+        ports:
+        - containerPort: {{ .Values.port | default 80 }}
+        volumeMounts:
+          - name: configuration
+            mountPath: {{ .Values.configuration.volumeLocation | default "/app/configuration" }} 
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: {{ .Values.configuration.location }}
+{{ if eq (.Values.scripts.type | lower) "init-container" }}
+      initContainers:
+      - name: script-initialiser
+        image: {{ .Values.scripts.image }}
+        command: {{ .Values.scripts.command }}
+        volumeMounts:
+          - name: scripts
+            mountPath: /scripts
+            readOnly: false
+{{ end }}
+      volumes:
+        - name: configuration
+{{ if eq (.Values.configuration.type | lower) "configmap" }}
+          configMap:
+            name: {{ .Values.configuration.name | default "pitboss-configuration" }}
+{{ else }}
+          secret:
+            secretName: {{ .Values.configuration.name | default "pitboss-configuration" }}
+{{ end }}
+        - name: scripts
+{{ if eq (.Values.scripts.type | lower) "persistant-disk" }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.scripts.name }}
+            readOnly: true
+{{ else if eq (.Values.scripts.type | lower) "host-path" }}
+          hostPath:
+            path: {{ .Values.scripts.name }}
+{{ else }}
+          emptyDir: {}
+{{ end }}

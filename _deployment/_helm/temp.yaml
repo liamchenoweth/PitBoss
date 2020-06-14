@@ -1,0 +1,308 @@
+---
+# Source: PitBoss/charts/container-service/templates/serviceAccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: container-service
+---
+# Source: PitBoss/templates/configuration.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pitboss-configuration
+data:
+    configuration.json: |-
+
+      {
+        "ContainerService": {
+            "Uri": "container-service-service",
+            "Port": "80",
+            "Scheme": "http",
+            "Containers": {
+                "Namespace": "default"
+            }
+        },
+        "OperationGroupContainer": {
+            "Uri": "operation-group-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "DistributedStepContainer": {
+            "Uri": "distributed-step-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "Boss": {
+            "Host": {
+                "Uri": "boss-service",
+                "Port": "80",
+                "Scheme": "http"
+            },
+            "Pipelines":
+            {
+                "ContainerCountAggregator": "Maximum",
+                "Location": "/app/scripts/pipelines"
+            },
+            "Scripts":
+            {
+                "AdditionalLocations": [
+                    "/app/scripts/additions"
+                ],
+                "Location": "/app/scripts/steps"
+            },
+            "Cache": {
+                "UseCache": "Redis",
+                "Redis": {"Host":"my-release-redis-headless","Password":"t2Z6U78gWy","Port":6379}
+            },
+            "Database":
+            {
+                "UseDatabase": "Postgres",
+                "Postgres": {"Database":"pitboss","Host":"postgres-postgresql","Password":"8HwQkWMtCZ","Port":5432,"Username":"postgres"}
+            }
+        },
+        "Operations": {
+            "Image": "pitboss:operation-latest"
+        }   
+      }
+---
+# Source: PitBoss/charts/container-service/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: container-service-role
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - delete
+      - create
+---
+# Source: PitBoss/charts/container-service/templates/roleBinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: container-service-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: container-service
+roleRef:
+  kind: Role
+  name: container-service-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: PitBoss/charts/boss/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: boss-service
+spec:
+  selector:
+    app: boss
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# Source: PitBoss/charts/container-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: container-service
+spec:
+  selector:
+    app: container-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# Source: PitBoss/charts/distributed-step/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: distributed-step-service
+spec:
+  selector:
+    app: distributed-step
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+# Source: PitBoss/charts/boss/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boss
+  labels:
+    app: boss
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: boss
+  template:
+    metadata:
+      labels:
+        app: boss
+        
+    spec:
+      containers:
+      - name: boss
+        image: pitboss:operation-group-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration 
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: /app/configuration/configuration.json
+
+      volumes:
+        - name: configuration
+
+          configMap:
+            name: pitboss-configuration
+
+        - name: scripts
+
+          hostPath:
+            path: /Projects/PitBoss/scripts
+---
+# Source: PitBoss/charts/container-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container-service
+  labels:
+    app: container-service
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: container-service
+  template:
+    metadata:
+      labels:
+        app: container-service
+        
+    spec:
+      serviceAccount: container-service
+      containers:
+      - name: container-service
+        image: pitboss:container-service-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration 
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: /app/configuration/configuration.json
+          - name: PITBOSS_IMPLEMENTATION
+            value: KUBERNETES
+
+      volumes:
+        - name: configuration
+
+          configMap:
+            name: pitboss-configuration
+
+        - name: scripts
+
+          hostPath:
+            path: /Projects/PitBoss/scripts
+---
+# Source: PitBoss/charts/distributed-step/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distributed-step
+  labels:
+    app: distributed-step
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: distributed-step
+  template:
+    metadata:
+      labels:
+        app: distributed-step
+        
+    spec:
+      containers:
+      - name: distributed-step
+        image: pitboss:distributed-step-latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration 
+            readOnly: true
+          - name: scripts
+            mountPath: /app/scripts
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: /app/configuration/configuration.json
+
+      volumes:
+        - name: configuration
+
+          configMap:
+            name: pitboss-configuration
+
+        - name: scripts
+
+          hostPath:
+            path: /Projects/PitBoss/scripts
+---
+# Source: PitBoss/charts/dbup/templates/job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dbup
+  labels:
+    app: dbup
+    
+spec:
+  template:
+    metadata:
+      labels:
+        app: dbup
+        
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: dbup
+        image: pitboss:dbup-latest
+        volumeMounts:
+          - name: configuration
+            mountPath: /app/configuration 
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: /app/configuration/configuration.json
+          - name: DB_CONTEXT
+            value: Postgres
+      volumes:
+        - name: configuration
+
+          configMap:
+            name: pitboss-configuration

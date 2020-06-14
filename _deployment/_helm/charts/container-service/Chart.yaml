@@ -1,0 +1,6 @@
+apiVersion: v2
+name: container-service
+description: service that manages the operation containers for pitboss
+type: application
+version: 1.0.0
+appVersion: 1.0.0

@@ -1,0 +1,69 @@
+{{ if .Values.configuration.enabled }}
+{{ if eq (.Values.configuration.type | lower) "configmap" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configuration.name }}
+data:
+    configuration.json: |-
+{{ else }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.configuration.name }}
+type: Opaque
+stringData:
+  configuration.json: |-
+{{ end }}
+      {
+        "ContainerService": {
+            "Uri": "container-service",
+            "Port": "80",
+            "Scheme": "http",
+            "Containers": {
+                "Namespace": "default"
+            }
+        },
+        "OperationGroupContainer": {
+            "Uri": "operation-group-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "DistributedStepContainer": {
+            "Uri": "distributed-step-service",
+            "Port": "80",
+            "Scheme": "http"
+        },
+        "Boss": {
+            "Host": {
+                "Uri": "boss-service",
+                "Port": "80",
+                "Scheme": "http"
+            },
+            "Pipelines":
+            {
+                "ContainerCountAggregator": "Maximum",
+                "Location": "/app/scripts/pipelines"
+            },
+            "Scripts":
+            {
+                "AdditionalLocations": [
+                    "/app/scripts/additions"
+                ],
+                "Location": "/app/scripts/steps"
+            },
+            "Cache": {
+                "UseCache": {{ .Values.configuration.cache.type | quote }},
+                {{ .Values.configuration.cache.type | quote }}: {{ .Values.configuration.cache.connectionValues | toJson }}
+            },
+            "Database":
+            {
+                "UseDatabase": {{ .Values.configuration.database.type | quote }},
+                {{ .Values.configuration.database.type | quote }}: {{ .Values.configuration.database.connectionValues | toJson }}
+            }
+        },
+        "Operations": {
+            "Image": "pitboss:operation-latest"
+        }   
+      }
+{{ end }}

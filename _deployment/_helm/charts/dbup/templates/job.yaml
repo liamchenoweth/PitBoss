@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dbup
+  labels:
+    app: dbup
+    {{ if .Values.additionalLabels }}
+{{ .Values.additionalLabels | toYaml }}
+{{ end }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: dbup
+        {{ if .Values.additionalLabels }}
+        {{ .Values.additionalLabels | toYaml }}
+        {{ end }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: dbup
+        image: {{ .Values.image | default "pitboss:dbup-latest" }}
+        volumeMounts:
+          - name: configuration
+            mountPath: {{ .Values.configuration.volumeLocation | default "/app/configuration" }} 
+            readOnly: true
+        env:
+          - name: PITBOSS_CONFIGURATION
+            value: {{ .Values.configuration.location }}
+          - name: DB_CONTEXT
+            value: {{ .Values.dbContext }}
+      volumes:
+        - name: configuration
+{{ if eq (.Values.configuration.type | lower) "configmap" }}
+          configMap:
+            name: {{ .Values.configuration.name | default "pitboss-configuration" }}
+{{ else }}
+          secret:
+            secretName: {{ .Values.configuration.name | default "pitboss-configuration" }}
+{{ end }}

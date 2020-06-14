@@ -1,0 +1,44 @@
+# Values for configuration
+configuration:
+# Should we create the default configuration
+  enabled: true
+  name: pitboss-configuration
+#   how the configuration is mounted to the container
+#   valid values are configmap or secret
+  type: configmap
+
+  database:
+    type: "Postgres"
+    connectionValues:
+      Host: postgres-postgresql
+      Port: 5432
+      Database: pitboss
+      Username: postgres
+      Password: USVMFY460h
+
+  cache:
+    type: "Redis"
+    connectionValues:
+      Host: redis-master
+      Port: 6379
+      Password: ytidgYz8bF
+
+boss:
+  scripts:
+    type: "host-path"
+    name: "/Projects/PitBoss/scripts"
+
+container-service:
+  scripts:
+    type: "host-path"
+    name: "/Projects/PitBoss/scripts"
+
+distributed-step:
+  scripts:
+    type: "host-path"
+    name: "/Projects/PitBoss/scripts"
+
+operation-group:
+  scripts:
+    type: "host-path"
+    name: "/Projects/PitBoss/scripts"

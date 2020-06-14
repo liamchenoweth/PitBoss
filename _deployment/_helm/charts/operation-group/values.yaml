@@ -1,0 +1,36 @@
+# Additional labels to add to the deployment and pod
+# additionalLabels:
+#   label: value
+
+# The number of pods to be created by this deployment
+replicaCount: 1
+
+# The image to be used for this deployment
+image: pitboss:operation-group-latest
+
+# Port to listen on
+port: 80
+
+# Values for service configuration
+configuration:
+#   location of the configuration file in the container
+  location: /app/configuration/configuration.json
+#   Where the configuration volume will be mounted
+  volumeLocation: /app/configuration
+#   how the configuration is mounted to the container
+#   valid values are configmap or secret
+  type: configmap
+#   if you have a precreated secret or configmap, add it's name here
+#   name: configuration
+
+# Values that tell the boss how to get access to scripts
+scripts:
+#   how the container gets access to the scripts
+#   available types are "init-container", "persistant-disk" and "host-path"
+  type: "persistant-disk"
+#   name of the persistant-disk or host-path
+  name: "pitboss-pvc"
+#   image to use for the init container
+#   image: script-puller
+#   command for init container
+#   command: ["pull-scripts.sh"]
