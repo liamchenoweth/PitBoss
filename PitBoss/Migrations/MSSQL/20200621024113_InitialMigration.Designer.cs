@@ -10,7 +10,7 @@ using PitBoss;
 namespace PitBoss.Migrations.MSSQL
 {
     [DbContext(typeof(MSSQLContext))]
-    [Migration("20200605090613_InitialMigration")]
+    [Migration("20200621024113_InitialMigration")]
     partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -130,6 +130,19 @@ namespace PitBoss.Migrations.MSSQL
                     b.ToTable("OperationResponses");
                 });
 
+            modelBuilder.Entity("PitBoss.PipelineModel", b =>
+                {
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Version");
+
+                    b.ToTable("Pipelines");
+                });
+
             modelBuilder.Entity("PitBoss.PipelineRequest", b =>
                 {
                     b.Property<string>("Id")
@@ -148,6 +161,9 @@ namespace PitBoss.Migrations.MSSQL
                     b.Property<string>("PipelineName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PipelineVersion")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("ResponseId")
                         .HasColumnType("nvarchar(450)");
 
@@ -161,9 +177,69 @@ namespace PitBoss.Migrations.MSSQL
 
                     b.HasIndex("CurrentRequestId");
 
+                    b.HasIndex("PipelineVersion");
+
                     b.HasIndex("ResponseId");
 
                     b.ToTable("PipelineRequests");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineStepModel", b =>
+                {
+                    b.Property<string>("HashCode")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BranchEndId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DistributedEndId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsBranch")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDistributed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDistributedStart")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NextSteps")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TargetCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("HashCode");
+
+                    b.ToTable("PipelineSteps");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineToStepMapper", b =>
+                {
+                    b.Property<string>("StepHash")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.HasKey("StepHash", "Version");
+
+                    b.HasIndex("Version");
+
+                    b.ToTable("PipelineStepMap");
                 });
 
             modelBuilder.Entity("PitBoss.DistributedOperationRequest", b =>
@@ -196,9 +272,28 @@ namespace PitBoss.Migrations.MSSQL
                         .WithMany()
                         .HasForeignKey("CurrentRequestId");
 
+                    b.HasOne("PitBoss.PipelineModel", "PipelineModel")
+                        .WithMany()
+                        .HasForeignKey("PipelineVersion");
+
                     b.HasOne("PitBoss.OperationResponse", "Response")
                         .WithMany()
                         .HasForeignKey("ResponseId");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineToStepMapper", b =>
+                {
+                    b.HasOne("PitBoss.PipelineStepModel", "Step")
+                        .WithMany("Pipelines")
+                        .HasForeignKey("StepHash")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PitBoss.PipelineModel", "Pipeline")
+                        .WithMany("Steps")
+                        .HasForeignKey("Version")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

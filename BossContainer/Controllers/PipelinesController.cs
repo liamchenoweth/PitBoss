@@ -31,7 +31,7 @@ namespace PitBoss
         [HttpGet("api/pipelines")]
         public ActionResult GetPipelines()
         {
-            return Ok(_pipelineManager.Pipelines.Select(x => x.Description));
+            return Ok(_pipelineManager.Pipelines.Select(x => new { x.Description, x.Version }));
         }
 
         [HttpGet("api/pipelines/{name}")]
@@ -40,10 +40,16 @@ namespace PitBoss
             return Ok(_pipelineManager.GetPipeline(name));
         }
 
-        [HttpGet("api/pipelines/{name}/requests")]
-        public ActionResult PipelineRequests(string name)
+        [HttpGet("api/pipelines/{name}/{version}")]
+        public ActionResult GetPipelineByVersion(string name, string version)
         {
-            return Ok(_requestManager.RequestsForPipeline(name));
+            return Ok(_pipelineManager.GetPipelineVersion(version));
+        }
+
+        [HttpGet("api/pipelines/{name}/{version}/requests")]
+        public ActionResult PipelineRequests(string name, string version)
+        {
+            return Ok(_requestManager.RequestsForPipelineVersion(version));
         }
 
         [HttpGet("api/pipelines/{name}/health")]

@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace PitBoss.Extensions
 {
@@ -68,6 +70,17 @@ namespace PitBoss.Extensions
             if (selector == null) throw new ArgumentNullException("selector");
             var ordered = source.OrderBy(selector);
             return ordered.ElementAt((int)Math.Floor(ordered.Count() / 2.0));
-        } 
+        }
+
+        public static T AddIfNotExists<T>(this DbSet<T> dbSet, T entity) where T : class
+        {
+            return dbSet.AddIfNotExists(null, entity);
+        }
+
+        public static T AddIfNotExists<T>(this DbSet<T> dbSet, Expression<Func<T, bool>> predicate, T entity) where T : class
+        {
+            var exists = predicate != null ? dbSet.Any(predicate) : dbSet.Any();
+            return !exists ? dbSet.Add(entity).Entity : null;
+        }
     }
 }

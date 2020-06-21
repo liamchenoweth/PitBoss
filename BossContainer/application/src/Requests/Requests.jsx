@@ -164,7 +164,7 @@ function Request()
         (async () => {
             var requestData = (await Get(`/api/requests/${params.id}`)).data;
             var operationData = (await Get(`/api/requests/${params.id}/operations`)).data;
-            var pipelineData = (await Get(`/api/pipelines/${requestData.pipelineName}`)).data;
+            var pipelineData = (await Get(`/api/pipelines/${requestData.pipelineName}/${requestData.pipelineVersion}`)).data;
             updateRequest(requestData);
             updatePipeline(pipelineData);
             updateOperations(operationData);
@@ -176,7 +176,8 @@ function Request()
             <br/>
             {pipeline && <div className={classes.stepLayout}>
                 <StepPlane>
-                    {pipeline.steps.map((step, i) => {
+                    {pipeline.steps.map((stepModel, i) => {
+                        var step = stepModel.step;
                         var ops = operations ? operations.filter(x => x.pipelineStepId == step.id && !x.isParentOperation) : [];
                         console.log(ops);
                         return (<Step {...step} key={step.id} color={ops.length > 0 ? getStepColor(ops) : getStepColor(null)}>

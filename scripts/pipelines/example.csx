@@ -17,6 +17,7 @@ class Builder : IPipelineBuilder {
             DisplayName = "TestName",
             TargetCount = 10
         }))
+        .AddStep(new PipelineStep<int, int>("increment.csx"))
         .AddStep(new PipelineStep<int, int>("increment.csx"));
 
         return new PipelineBuilder<int>(desc)

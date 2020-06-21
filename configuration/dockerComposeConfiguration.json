@@ -69,6 +69,6 @@
         }
     },
     "Operations": {
-        "Image": "default_operation_container"
+        "Image": "pitboss:operation-latest"
     }   
 }

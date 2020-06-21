@@ -65,6 +65,8 @@ namespace PitBoss
             }
             await _pipelineManager.CompilePipelinesAsync(pipelineLocation);
 
+            _pipelineManager.RegisterPipelines();
+
             foreach(var step in FilterSteps(_pipelineManager.Pipelines.SelectMany(x => x.Steps).ToList()))
             {
                 await _containerManager.RegisterGroupAsync(new DefaultOperationGroup(step));

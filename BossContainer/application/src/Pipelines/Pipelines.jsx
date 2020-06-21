@@ -92,10 +92,11 @@ function PipelineList() {
         (async () => {
             if(!didUpdate){
                 var pipeNames = (await Get("/api/pipelines", null)).data;
+                pipeNames = pipeNames.map(x => { return { ...(x.description), version: x.version } })
                 var pipesPromise = pipeNames.map(x => {
                     return {
                         health: Get(`/api/pipelines/${x.name}/health`, null),
-                        requests: Get(`/api/pipelines/${x.name}/requests`, null)
+                        requests: Get(`/api/pipelines/${x.name}/${x.version}/requests`, null)
                     }
                 });
                 console.log(pipesPromise.length);

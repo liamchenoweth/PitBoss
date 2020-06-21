@@ -8,6 +8,9 @@ namespace PitBoss
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id {get;set;}
         public string PipelineName {get;set;}
+        [ForeignKey("PipelineModel")]
+        public string PipelineVersion { get; set; }
+        public PipelineModel PipelineModel { get; set; }
         public RequestStatus Status {get;set;}
         public OperationRequest CurrentRequest {get;set;}
         [ForeignKey("Response")]

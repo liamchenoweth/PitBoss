@@ -6,6 +6,7 @@ namespace PitBoss {
         void QueueRequest(PipelineRequest request);
         void FinishRequest(OperationResponse response);
         IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName, bool expanded = false);
+        IEnumerable<PipelineRequest> RequestsForPipelineVersion(string pipelineVersion, bool expanded = false);
         IEnumerable<PipelineRequest> PendingRequests(bool expanded = false);
         IEnumerable<PipelineRequest> InProgressRequests(bool expanded = false);
         IEnumerable<PipelineRequest> CompletedRequests(bool expanded = false);

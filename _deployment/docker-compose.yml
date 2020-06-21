@@ -18,6 +18,8 @@ services:
     environment:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
       DB_CONTEXT: Postgres
+    volumes:
+      - ../configuration:/app/configuration
   boss-container:
     build: 
       context: ../
@@ -27,6 +29,9 @@ services:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
     ports:
     - 8000:80
+    volumes:
+      - ../configuration:/app/configuration
+      - ../scripts:/app/scripts
   container-service:
     build: 
       context: ../
@@ -37,6 +42,8 @@ services:
       PITBOSS_IMPLEMENTATION: DOCKER_COMPOSE
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ../configuration:/app/configuration
+      - ../scripts:/app/scripts
   distributed-step-container:
     build: 
       context: ../
@@ -44,6 +51,9 @@ services:
     container_name: distributed-step-container
     environment:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+    volumes:
+      - ../configuration:/app/configuration
+      - ../scripts:/app/scripts
   operation-group-container:
     build: 
       context: ../
@@ -51,6 +61,9 @@ services:
     container_name: operation-group-container
     environment:
       PITBOSS_CONFIGURATION: /app/configuration/dockerComposeConfiguration.json
+    volumes:
+      - ../configuration:/app/configuration
+      - ../scripts:/app/scripts
 networks:
   default:
     name: pitboss

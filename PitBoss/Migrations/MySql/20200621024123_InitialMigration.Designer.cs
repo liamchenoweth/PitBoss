@@ -4,38 +4,35 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PitBoss;
 
-namespace PitBoss.Migrations.Postgres
+namespace PitBoss.Migrations.MySql
 {
-    [DbContext(typeof(PostgresContext))]
-    [Migration("20200601094553_InitialMigration")]
+    [DbContext(typeof(MySqlContext))]
+    [Migration("20200621024123_InitialMigration")]
     partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.1")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("ProductVersion", "3.1.4")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("PitBoss.DistributedRequestSeed", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int");
 
                     b.Property<string>("DistributedOperationRequestId")
                         .HasColumnType("text");
 
                     b.Property<string>("DistributedRequestId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<string>("OperationRequestId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.HasKey("Id");
 
@@ -50,16 +47,16 @@ namespace PitBoss.Migrations.Postgres
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<string>("CallbackUri")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Completed")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
@@ -69,7 +66,7 @@ namespace PitBoss.Migrations.Postgres
                         .HasColumnType("text");
 
                     b.Property<bool>("IsParentOperation")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<string>("ParentRequestId")
                         .HasColumnType("text");
@@ -84,13 +81,13 @@ namespace PitBoss.Migrations.Postgres
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Started")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Updated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.HasKey("Id");
 
@@ -102,10 +99,10 @@ namespace PitBoss.Migrations.Postgres
             modelBuilder.Entity("PitBoss.OperationResponse", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("PipelineId")
                         .HasColumnType("text");
@@ -120,27 +117,40 @@ namespace PitBoss.Migrations.Postgres
                         .HasColumnType("text");
 
                     b.Property<bool>("Success")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("Updated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.HasKey("Id");
 
                     b.ToTable("OperationResponses");
                 });
 
+            modelBuilder.Entity("PitBoss.PipelineModel", b =>
+                {
+                    b.Property<string>("Version")
+                        .HasColumnType("varchar(767)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.HasKey("Version");
+
+                    b.ToTable("Pipelines");
+                });
+
             modelBuilder.Entity("PitBoss.PipelineRequest", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.Property<string>("CurrentRequestId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<string>("Input")
                         .HasColumnType("text");
@@ -148,22 +158,85 @@ namespace PitBoss.Migrations.Postgres
                     b.Property<string>("PipelineName")
                         .HasColumnType("text");
 
+                    b.Property<string>("PipelineVersion")
+                        .HasColumnType("varchar(767)");
+
                     b.Property<string>("ResponseId")
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(767)");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Updated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CurrentRequestId");
 
+                    b.HasIndex("PipelineVersion");
+
                     b.HasIndex("ResponseId");
 
                     b.ToTable("PipelineRequests");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineStepModel", b =>
+                {
+                    b.Property<string>("HashCode")
+                        .HasColumnType("varchar(767)");
+
+                    b.Property<string>("BranchEndId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DistributedEndId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsBranch")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDistributed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDistributedStart")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NextSteps")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TargetCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("HashCode");
+
+                    b.ToTable("PipelineSteps");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineToStepMapper", b =>
+                {
+                    b.Property<string>("StepHash")
+                        .HasColumnType("varchar(767)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("varchar(767)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.HasKey("StepHash", "Version");
+
+                    b.HasIndex("Version");
+
+                    b.ToTable("PipelineStepMap");
                 });
 
             modelBuilder.Entity("PitBoss.DistributedOperationRequest", b =>
@@ -196,9 +269,28 @@ namespace PitBoss.Migrations.Postgres
                         .WithMany()
                         .HasForeignKey("CurrentRequestId");
 
+                    b.HasOne("PitBoss.PipelineModel", "PipelineModel")
+                        .WithMany()
+                        .HasForeignKey("PipelineVersion");
+
                     b.HasOne("PitBoss.OperationResponse", "Response")
                         .WithMany()
                         .HasForeignKey("ResponseId");
+                });
+
+            modelBuilder.Entity("PitBoss.PipelineToStepMapper", b =>
+                {
+                    b.HasOne("PitBoss.PipelineStepModel", "Step")
+                        .WithMany("Pipelines")
+                        .HasForeignKey("StepHash")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PitBoss.PipelineModel", "Pipeline")
+                        .WithMany("Steps")
+                        .HasForeignKey("Version")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -1,7 +1,8 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace PitBoss.Migrations.Sqlite
+namespace PitBoss.Migrations.Postgres
 {
     public partial class InitialMigration : Migration
     {
@@ -52,11 +53,44 @@ namespace PitBoss.Migrations.Sqlite
                 });
 
             migrationBuilder.CreateTable(
+                name: "Pipelines",
+                columns: table => new
+                {
+                    Version = table.Column<string>(nullable: false),
+                    Name = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Pipelines", x => x.Version);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PipelineSteps",
+                columns: table => new
+                {
+                    HashCode = table.Column<string>(nullable: false),
+                    NextSteps = table.Column<string>(nullable: true),
+                    IsBranch = table.Column<bool>(nullable: false),
+                    BranchEndId = table.Column<string>(nullable: true),
+                    Id = table.Column<string>(nullable: true),
+                    Name = table.Column<string>(nullable: true),
+                    DisplayName = table.Column<string>(nullable: true),
+                    TargetCount = table.Column<int>(nullable: false),
+                    IsDistributedStart = table.Column<bool>(nullable: false),
+                    IsDistributed = table.Column<bool>(nullable: false),
+                    DistributedEndId = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PipelineSteps", x => x.HashCode);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DistributedRequestSeeds",
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DistributedOperationRequestId = table.Column<string>(nullable: true),
                     DistributedRequestId = table.Column<string>(nullable: true),
                     OperationRequestId = table.Column<string>(nullable: true)
@@ -65,7 +99,7 @@ namespace PitBoss.Migrations.Sqlite
                 {
                     table.PrimaryKey("PK_DistributedRequestSeeds", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedRequestId",
+                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedReques~",
                         column: x => x.DistributedRequestId,
                         principalTable: "OperationRequests",
                         principalColumn: "Id",
@@ -86,6 +120,7 @@ namespace PitBoss.Migrations.Sqlite
                     Created = table.Column<DateTime>(nullable: false),
                     Updated = table.Column<DateTime>(nullable: false),
                     PipelineName = table.Column<string>(nullable: true),
+                    PipelineVersion = table.Column<string>(nullable: true),
                     Status = table.Column<int>(nullable: false),
                     CurrentRequestId = table.Column<string>(nullable: true),
                     ResponseId = table.Column<string>(nullable: true),
@@ -101,11 +136,42 @@ namespace PitBoss.Migrations.Sqlite
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_PipelineRequests_Pipelines_PipelineVersion",
+                        column: x => x.PipelineVersion,
+                        principalTable: "Pipelines",
+                        principalColumn: "Version",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_PipelineRequests_OperationResponses_ResponseId",
                         column: x => x.ResponseId,
                         principalTable: "OperationResponses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PipelineStepMap",
+                columns: table => new
+                {
+                    Version = table.Column<string>(nullable: false),
+                    StepHash = table.Column<string>(nullable: false),
+                    Order = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PipelineStepMap", x => new { x.StepHash, x.Version });
+                    table.ForeignKey(
+                        name: "FK_PipelineStepMap_PipelineSteps_StepHash",
+                        column: x => x.StepHash,
+                        principalTable: "PipelineSteps",
+                        principalColumn: "HashCode",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PipelineStepMap_Pipelines_Version",
+                        column: x => x.Version,
+                        principalTable: "Pipelines",
+                        principalColumn: "Version",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -124,9 +190,19 @@ namespace PitBoss.Migrations.Sqlite
                 column: "CurrentRequestId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PipelineRequests_PipelineVersion",
+                table: "PipelineRequests",
+                column: "PipelineVersion");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PipelineRequests_ResponseId",
                 table: "PipelineRequests",
                 column: "ResponseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PipelineStepMap_Version",
+                table: "PipelineStepMap",
+                column: "Version");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -138,10 +214,19 @@ namespace PitBoss.Migrations.Sqlite
                 name: "PipelineRequests");
 
             migrationBuilder.DropTable(
+                name: "PipelineStepMap");
+
+            migrationBuilder.DropTable(
                 name: "OperationRequests");
 
             migrationBuilder.DropTable(
                 name: "OperationResponses");
+
+            migrationBuilder.DropTable(
+                name: "PipelineSteps");
+
+            migrationBuilder.DropTable(
+                name: "Pipelines");
         }
     }
 }

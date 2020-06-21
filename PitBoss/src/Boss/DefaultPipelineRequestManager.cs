@@ -28,7 +28,9 @@ namespace PitBoss {
 
         public void QueueRequest(PipelineRequest request) 
         {
-            var step = _pipelineManager.GetPipeline(request.PipelineName).Steps[0];
+            var pipeline = _pipelineManager.GetPipeline(request.PipelineName);
+            request.PipelineVersion = pipeline.Version;
+            var step = pipeline.Steps[0];
             var requestString = $"{DefaultOperationRequestManager.CachePrefix}:{step.Name}";
             var operation = new OperationRequest(request, step.Id, null);
             request.Status = RequestStatus.Pending;
@@ -59,6 +61,15 @@ namespace PitBoss {
 
         public IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName, bool expanded = false) {
             var requests = _db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
+            if(expanded)
+            {
+                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+            }
+            return requests;
+        }
+
+        public IEnumerable<PipelineRequest> RequestsForPipelineVersion(string pipelineVersion, bool expanded = false) {
+            var requests = _db.PipelineRequests.Where(x => x.PipelineVersion == pipelineVersion);
             if(expanded)
             {
                 requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);

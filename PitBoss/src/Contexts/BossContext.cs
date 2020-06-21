@@ -1,15 +1,26 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using PitBoss.Utils;
 
 namespace PitBoss
 {
+    public class PipelineToStepMapper
+    {
+        public string Version {get;set;}
+        public PipelineModel Pipeline { get; set; }
+        public string StepHash {get;set;}
+        public PipelineStepModel Step {get; set;}
+        public int Order { get; set; }
+    }
+
     public abstract class BossContext : DbContext
     {
         protected IConfiguration _configuration;
@@ -18,6 +29,9 @@ namespace PitBoss
         public DbSet<OperationResponse> OperationResponses { get; set; }
         public DbSet<DistributedOperationRequest> DistributedOperationRequests { get; set; }
         public DbSet<DistributedRequestSeed> DistributedRequestSeeds { get; set; }
+        public DbSet<PipelineStepModel> PipelineSteps { get; set; }
+        public DbSet<PipelineModel> Pipelines { get; set; }
+        public DbSet<PipelineToStepMapper> PipelineStepMap {get; set;}
 
         public BossContext(IConfiguration configuration) : base()
         {
@@ -41,6 +55,27 @@ namespace PitBoss
                     options.UseSqlite(_configuration["Boss:Database:SQLite"]);
                     break;
             }
+        }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            // var stringSaver = new ValueConverter<List<string>, List<StringWrapper>>(
+            //     x => x.Select(y => new StringWrapper(y)).ToList(),
+            //     x => x.Select(y => y.Value).ToList());
+            // builder.Entity<PipelineStep>().Property(e => e.NextSteps).HasConversion(stringSaver);
+            var stringSaver = new ValueConverter<List<string>, string>(
+                x => string.Join("<sep>", x),
+                x => x.Split("<sep>", StringSplitOptions.RemoveEmptyEntries).ToList());
+            builder.Entity<PipelineStepModel>().Property(e => e.NextSteps).HasConversion(stringSaver);
+            builder.Entity<PipelineToStepMapper>()
+                .HasOne(x => x.Pipeline)
+                .WithMany(x => x.Steps)
+                .HasForeignKey(x => x.Version);
+            builder.Entity<PipelineToStepMapper>()
+                .HasOne(x => x.Step)
+                .WithMany(x => x.Pipelines)
+                .HasForeignKey(x => x.StepHash);
+            builder.Entity<PipelineToStepMapper>().HasKey(x => new {x.StepHash, x.Version});
         }
 
         public override int SaveChanges()

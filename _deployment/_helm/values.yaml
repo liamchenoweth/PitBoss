@@ -14,14 +14,14 @@ configuration:
       Port: 5432
       Database: pitboss
       Username: postgres
-      Password: USVMFY460h
+      Password: aZmFh8m5Mu
 
   cache:
     type: "Redis"
     connectionValues:
       Host: redis-master
       Port: 6379
-      Password: ytidgYz8bF
+      Password: AY3ik5GZjC
 
 boss:
   scripts:

@@ -9,6 +9,8 @@ namespace PitBoss {
         IEnumerable<Pipeline> CompilePipelines(string directory);
         Task<IEnumerable<Pipeline>> CompilePipelinesAsync(string directory);
         Pipeline GetPipeline(string name);
+        PipelineModel GetPipelineVersion(string version);
+        void RegisterPipelines();
         //PipelineStep GetPipelineStep(string pipeline, string pipelineName);
     }
 }

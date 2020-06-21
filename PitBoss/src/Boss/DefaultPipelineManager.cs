@@ -7,7 +7,9 @@ using System.Runtime.Loader;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using PitBoss.Utils;
+using PitBoss.Extensions;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace PitBoss {
     public class DefaultPipelineManager : IPipelineManager {
@@ -15,9 +17,14 @@ namespace PitBoss {
         private const string CompileLocation = "compiled";
         private ILogger<IPipelineManager> _logger;
         private List<Pipeline> _pipelines;
+        private BossContext _context;
 
-        public DefaultPipelineManager(ILogger<IPipelineManager> logger) {
+        public DefaultPipelineManager(
+            ILogger<IPipelineManager> logger,
+            BossContext context
+        ) {
             _logger = logger;
+            _context = context;
         }
 
         public IEnumerable<Pipeline> Pipelines 
@@ -106,6 +113,41 @@ namespace PitBoss {
         public Pipeline GetPipeline(string name)
         {
             return _pipelines.FirstOrDefault(x => x.Name == name);
+        }
+
+        public PipelineModel GetPipelineVersion(string version)
+        {
+            var pipeline = _context.Pipelines.Include(x => x.Steps).ThenInclude(x => x.Step).FirstOrDefault(x => x.Version == version);
+            pipeline.Steps = pipeline.Steps.OrderBy(x => x.Order).ToList();
+            return pipeline;
+        }
+
+        public void RegisterPipelines()
+        {
+            _logger.LogInformation("Regestering pipeline versions");
+            var pipelineModels = _pipelines.Select(x => x.ToModel());
+            var stepModels = _pipelines.SelectMany(x => x.Steps.Select(y => y.ToModel()));
+            foreach(var model in stepModels)
+            {
+                _context.PipelineSteps.AddIfNotExists(x => x.HashCode == model.HashCode, model);
+            }
+            foreach(var pipeline in pipelineModels)
+            {
+                var maps = pipeline.Steps;
+                pipeline.Steps = null;
+                _context.Pipelines.AddIfNotExists(x => x.Version == pipeline.Version, pipeline);
+                for(var i = 0; i < maps.Count; i++)
+                {
+                    var map = maps[i];
+                    map.Version = map.Pipeline.Version;
+                    map.StepHash = map.Step.HashCode;
+                    map.Step = null;
+                    map.Pipeline = null;
+                    map.Order = i;
+                    _context.PipelineStepMap.AddIfNotExists(x => x.Version == map.Version && x.StepHash == map.StepHash, map);
+                }
+            }
+            _context.SaveChanges();
         }
     }
 }
