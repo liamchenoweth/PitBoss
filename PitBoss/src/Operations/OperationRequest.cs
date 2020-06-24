@@ -14,11 +14,13 @@ namespace PitBoss {
         public string PipelineStepId { get; set; }
         public string CallbackUri { get; set; }
         public RequestStatus Status { get; set; }
+        public DateTime Queued { get; set; }
         public DateTime Started {get;set;}
         public DateTime Completed {get;set;}
         public string ParentRequestId {get; set;}
         public string InstigatingRequestId {get;set;}
         public bool IsParentOperation {get;set;}
+        public int RetryCount {get; set;}
         public OperationRequest() {}
         public OperationRequest(PipelineRequest pipeline, string step, OperationRequest instigatingRequest)
         {
@@ -28,6 +30,7 @@ namespace PitBoss {
             IsParentOperation = false;
             ParentRequestId = instigatingRequest?.ParentRequestId;
             InstigatingRequestId = instigatingRequest?.Id;
+            RetryCount = 0;
         }
     }
 
@@ -47,6 +50,7 @@ namespace PitBoss {
             IsParentOperation = false;
             ParentRequestId = request.ParentRequestId;
             InstigatingRequestId = instigatingRequest?.Id;
+            RetryCount = 0;
         }
     }
 

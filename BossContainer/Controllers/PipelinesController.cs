@@ -47,9 +47,15 @@ namespace PitBoss
         }
 
         [HttpGet("api/pipelines/{name}/{version}/requests")]
-        public ActionResult PipelineRequests(string name, string version)
+        public ActionResult PipelineRequestsForVersion(string name, string version)
         {
             return Ok(_requestManager.RequestsForPipelineVersion(version));
+        }
+
+        [HttpGet("api/pipelines/{name}/requests")]
+        public ActionResult PipelineRequests(string name)
+        {
+            return Ok(_requestManager.RequestsForPipeline(name));
         }
 
         [HttpGet("api/pipelines/{name}/health")]

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
+using System;
 using PitBoss.Utils;
 
 namespace PitBoss {
@@ -67,6 +68,31 @@ namespace PitBoss {
                         // Poll for new tasks
                         var request = _operationRequestManager.FetchNextRequest(step);
                         if(request == null) continue;
+                        if(request.RetryCount > 0)
+                        {
+                            var retryStrategy = pipeline.Description.RetryStrategy;
+                            if(step.RetryStrategy != RetryStrategy.Inherit) retryStrategy = step.RetryStrategy;
+                            var backoffSeconds = _configuration.GetValue<int>("OperationGroupContainer:Retry:Backoff");
+                            switch(retryStrategy)
+                            {
+                                case RetryStrategy.Linear:
+                                    if(request.Queued.AddSeconds(backoffSeconds * request.RetryCount) < DateTime.Now)
+                                    {
+                                        _operationRequestManager.ReturnRequest(request, true);
+                                        continue;
+                                    }
+                                    break;
+                                case RetryStrategy.Exponential:
+                                    if(request.Queued.AddSeconds(backoffSeconds * request.RetryCount) < DateTime.Now)
+                                    {
+                                        _operationRequestManager.ReturnRequest(request, true);
+                                        continue;
+                                    }
+                                    break;
+                                default:
+                                    continue;
+                            }
+                        }
 
                         var group = await _containerManager.GetContainersByStepAsync(step);
                         try

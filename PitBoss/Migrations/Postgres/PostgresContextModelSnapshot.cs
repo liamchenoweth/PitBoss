@@ -81,6 +81,12 @@ namespace PitBoss.Migrations.Postgres
                     b.Property<string>("PipelineStepId")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("Queued")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("Started")
                         .HasColumnType("timestamp without time zone");
 
@@ -104,6 +110,9 @@ namespace PitBoss.Migrations.Postgres
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
 
                     b.Property<string>("PipelineId")
                         .HasColumnType("text");

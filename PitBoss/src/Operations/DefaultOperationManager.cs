@@ -79,19 +79,18 @@ namespace PitBoss {
 
         public async Task<object> ProcessRequest(OperationRequest request)
         {
-            _healthManager.SetActiveOperation(request);
             var requestType = request.GetType();
             var propInfo = requestType.GetProperty("Parameter");
             object parameter = propInfo.GetValue(request);
             return (await Task.Run(() => _operation.DynamicInvoke(parameter), _healthManager.GetCancellationToken(request)));
         }
 
-        public void FinishRequest(OperationRequest request, object output, bool failed)
+        public void FinishRequest(OperationRequest request, object output, bool failed, Exception e = null)
         {
-            FinishRequestAsync(request, output, failed).Wait();
+            FinishRequestAsync(request, output, failed, e).Wait();
         }
 
-        public async Task FinishRequestAsync(OperationRequest request, object output, bool failed)
+        public async Task FinishRequestAsync(OperationRequest request, object output, bool failed, Exception e = null)
         {
             // Get our specific response generic type
             var respType = typeof(OperationResponse<>).MakeGenericType(OutputType);
@@ -101,11 +100,10 @@ namespace PitBoss {
             // This will throw an error if the output is not the correct type
             response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == respType).GetSetMethod().Invoke(response, new object[] { output });
             response.Success = failed;
+            response.Error = e?.InnerException?.Message ?? e?.Message;
             var client = _clientFactory.CreateClient();
             var content = new StringContent(await Task.Factory.StartNew(() => JsonConvert.SerializeObject(response)), Encoding.UTF8, "application/json");
             var postResp = await client.PostAsync($"{request.CallbackUri}/{ResponseUri}", content);
-            // TODO: do some error checking / retrying here
-            _healthManager.FinishActiveOperation(request);
         }
 
         public async Task CompileOperationAsync(string location)

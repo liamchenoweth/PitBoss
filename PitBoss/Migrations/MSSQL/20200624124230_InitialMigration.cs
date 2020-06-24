@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using MySql.Data.EntityFrameworkCore.Metadata;
 
-namespace PitBoss.Migrations.MySql
+namespace PitBoss.Migrations.MSSQL
 {
     public partial class InitialMigration : Migration
     {
@@ -20,11 +19,13 @@ namespace PitBoss.Migrations.MySql
                     PipelineStepId = table.Column<string>(nullable: true),
                     CallbackUri = table.Column<string>(nullable: true),
                     Status = table.Column<int>(nullable: false),
+                    Queued = table.Column<DateTime>(nullable: false),
                     Started = table.Column<DateTime>(nullable: false),
                     Completed = table.Column<DateTime>(nullable: false),
                     ParentRequestId = table.Column<string>(nullable: true),
                     InstigatingRequestId = table.Column<string>(nullable: true),
                     IsParentOperation = table.Column<bool>(nullable: false),
+                    RetryCount = table.Column<int>(nullable: false),
                     Discriminator = table.Column<string>(nullable: false),
                     EndingStepId = table.Column<string>(nullable: true),
                     BeginingStepId = table.Column<string>(nullable: true)
@@ -45,6 +46,7 @@ namespace PitBoss.Migrations.MySql
                     PipelineName = table.Column<string>(nullable: true),
                     PipelineStepId = table.Column<string>(nullable: true),
                     Success = table.Column<bool>(nullable: false),
+                    Error = table.Column<string>(nullable: true),
                     Result = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
@@ -90,7 +92,7 @@ namespace PitBoss.Migrations.MySql
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     DistributedOperationRequestId = table.Column<string>(nullable: true),
                     DistributedRequestId = table.Column<string>(nullable: true),
                     OperationRequestId = table.Column<string>(nullable: true)
@@ -99,7 +101,7 @@ namespace PitBoss.Migrations.MySql
                 {
                     table.PrimaryKey("PK_DistributedRequestSeeds", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedRequest~",
+                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedRequestId",
                         column: x => x.DistributedRequestId,
                         principalTable: "OperationRequests",
                         principalColumn: "Id",

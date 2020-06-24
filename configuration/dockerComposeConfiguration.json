@@ -7,7 +7,10 @@
     "OperationGroupContainer": {
         "Uri": "operation-group-service",
         "Port": "80",
-        "Scheme": "http"
+        "Scheme": "http",
+        "Retry": {
+            "Backoff": 5
+        }
     },
     "DistributedStepContainer": {
         "Uri": "distributed-step-service",

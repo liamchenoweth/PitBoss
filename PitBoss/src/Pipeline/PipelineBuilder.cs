@@ -4,12 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace PitBoss {
+
     public interface IPipelineBuilder
     {
         Pipeline Build();
+        bool Distributed {get => false;}
     }
 
-    public abstract class PipelineBuilder {
+    public abstract class PipelineBuilder : IPipelineBuilder {
         internal List<PipelineStep> _steps;
         internal PipelineDescriptor _description;
         public abstract Pipeline Build();

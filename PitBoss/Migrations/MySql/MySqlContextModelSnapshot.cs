@@ -78,6 +78,12 @@ namespace PitBoss.Migrations.MySql
                     b.Property<string>("PipelineStepId")
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("Queued")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("Started")
                         .HasColumnType("datetime");
 
@@ -101,6 +107,9 @@ namespace PitBoss.Migrations.MySql
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
 
                     b.Property<string>("PipelineId")
                         .HasColumnType("text");

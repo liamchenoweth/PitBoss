@@ -29,6 +29,7 @@ namespace PitBoss {
         public string PipelineName { get; set; }
         public string PipelineStepId { get; set; }
         public bool Success { get; set; }
+        public string Error { get; set; }
         
         protected string _result;
         public string Result {

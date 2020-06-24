@@ -1,7 +1,8 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace PitBoss.Migrations.MSSQL
+namespace PitBoss.Migrations.Postgres
 {
     public partial class InitialMigration : Migration
     {
@@ -19,11 +20,13 @@ namespace PitBoss.Migrations.MSSQL
                     PipelineStepId = table.Column<string>(nullable: true),
                     CallbackUri = table.Column<string>(nullable: true),
                     Status = table.Column<int>(nullable: false),
+                    Queued = table.Column<DateTime>(nullable: false),
                     Started = table.Column<DateTime>(nullable: false),
                     Completed = table.Column<DateTime>(nullable: false),
                     ParentRequestId = table.Column<string>(nullable: true),
                     InstigatingRequestId = table.Column<string>(nullable: true),
                     IsParentOperation = table.Column<bool>(nullable: false),
+                    RetryCount = table.Column<int>(nullable: false),
                     Discriminator = table.Column<string>(nullable: false),
                     EndingStepId = table.Column<string>(nullable: true),
                     BeginingStepId = table.Column<string>(nullable: true)
@@ -44,6 +47,7 @@ namespace PitBoss.Migrations.MSSQL
                     PipelineName = table.Column<string>(nullable: true),
                     PipelineStepId = table.Column<string>(nullable: true),
                     Success = table.Column<bool>(nullable: false),
+                    Error = table.Column<string>(nullable: true),
                     Result = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
@@ -89,7 +93,7 @@ namespace PitBoss.Migrations.MSSQL
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DistributedOperationRequestId = table.Column<string>(nullable: true),
                     DistributedRequestId = table.Column<string>(nullable: true),
                     OperationRequestId = table.Column<string>(nullable: true)
@@ -98,7 +102,7 @@ namespace PitBoss.Migrations.MSSQL
                 {
                     table.PrimaryKey("PK_DistributedRequestSeeds", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedRequestId",
+                        name: "FK_DistributedRequestSeeds_OperationRequests_DistributedReques~",
                         column: x => x.DistributedRequestId,
                         principalTable: "OperationRequests",
                         principalColumn: "Id",

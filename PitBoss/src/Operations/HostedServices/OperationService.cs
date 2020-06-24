@@ -38,10 +38,12 @@ namespace PitBoss
                     await Task.Delay(5000);
                     continue;
                 }
+                _healthManager.SetActiveOperation(nextRequest);
                 try
                 {
                     _logger.LogInformation($"Starting request {nextRequest.Id}");
                     var ret = await _operationManager.ProcessRequest(nextRequest);
+                    _healthManager.FinishActiveOperation(nextRequest);
                     await _operationManager.FinishRequestAsync(nextRequest, ret, true);
                     _logger.LogInformation($"Finished request {nextRequest.Id}");
                 }
@@ -49,7 +51,7 @@ namespace PitBoss
                 {
                     _logger.LogError(e, $"Failed to process {nextRequest.Id}");
                     _healthManager.FailActiveOperation(nextRequest, e);
-                    await _operationManager.FinishRequestAsync(nextRequest, null, false);
+                    await _operationManager.FinishRequestAsync(nextRequest, null, false, e);
                 }
             }
             _logger.LogInformation("Shutting down operation container");

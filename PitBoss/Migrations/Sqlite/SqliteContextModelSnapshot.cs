@@ -77,6 +77,12 @@ namespace PitBoss.Migrations.Sqlite
                     b.Property<string>("PipelineStepId")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("Queued")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("Started")
                         .HasColumnType("TEXT");
 
@@ -99,6 +105,9 @@ namespace PitBoss.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Error")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PipelineId")

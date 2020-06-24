@@ -16,7 +16,7 @@ namespace PitBoss {
         Task<OperationRequest> DeserialiseRequestAsync(Stream requestJson);
         OperationRequest DeserialiseRequest(Stream requestJson);
         OperationRequest DeserialiseRequest(string requestJson);
-        void FinishRequest(OperationRequest request, object output, bool failed);
-        Task FinishRequestAsync(OperationRequest request, object output, bool failed);
+        void FinishRequest(OperationRequest request, object output, bool failed, Exception e = null);
+        Task FinishRequestAsync(OperationRequest request, object output, bool failed, Exception e = null);
     }
 }

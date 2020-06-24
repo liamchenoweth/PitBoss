@@ -81,6 +81,12 @@ namespace PitBoss.Migrations.MSSQL
                     b.Property<string>("PipelineStepId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("Queued")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("Started")
                         .HasColumnType("datetime2");
 
@@ -104,6 +110,9 @@ namespace PitBoss.Migrations.MSSQL
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PipelineId")
                         .HasColumnType("nvarchar(max)");

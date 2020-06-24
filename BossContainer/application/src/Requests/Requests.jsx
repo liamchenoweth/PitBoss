@@ -215,7 +215,7 @@ function Request()
             <ReactJson src={isObject(request.input) ? request.input : { input: request.input }} theme="solarized"/>
             <br/>
             {request.response && <Typography variant="h6">Output:</Typography>}
-            {request.response && <ReactJson src={isObject(request.response.result) ? request.response.result : { output: request.response.result }} theme="solarized"/>}
+            {request.response && <ReactJson src={request.status !== "Failed" ? (isObject(request.response.result) ? request.response.result : { output: request.response.result }) : { error: request.response.error } } theme="solarized"/>}
         </div>
     )
 }

@@ -10,6 +10,7 @@ namespace PitBoss {
     {
         public string DisplayName {get;set;}
         public int TargetCount {get;set;}
+        public RetryStrategy RetryStrategy {get; set;}
     }
 
     public class PipelineStep {
@@ -24,6 +25,7 @@ namespace PitBoss {
             Name = script_name;
             DisplayName = options?.DisplayName ?? Name;
             TargetCount = options?.TargetCount ?? 1;
+            RetryStrategy = options?.RetryStrategy ?? RetryStrategy.None;
             Input = null;
             Output = null;
             Id = Guid.NewGuid().ToString();
@@ -37,6 +39,7 @@ namespace PitBoss {
         public string Name {get; protected set;}
         public string DisplayName {get; protected set;}
         public int TargetCount {get; protected set;}
+        public RetryStrategy RetryStrategy {get; protected set;}
         public Type Input {get; protected set;}
         public Type Output {get; protected set;}
         public bool IsDistributedStart {get; internal set;}
@@ -106,7 +109,8 @@ namespace PitBoss {
         }
     }
 
-    public class PipelineStep<InArg, OutArg> : PipelineStep {
+    public class PipelineStep<InArg, OutArg> : PipelineStep
+    {
 
         internal PipelineStep() {
             Input = typeof(InArg);

@@ -7,7 +7,8 @@ using PitBoss;
 class Builder : IPipelineBuilder {
     public Pipeline Build() {
         PipelineDescriptor desc = new PipelineDescriptor{
-            Name = "test"
+            Name = "test",
+            RetryStrategy = RetryStrategy.Linear
         };
 
         var distribution1 = new PipelineBuilder<int>(new PipelineDescriptor{
@@ -23,6 +24,7 @@ class Builder : IPipelineBuilder {
         return new PipelineBuilder<int>(desc)
         .AddStep(new PipelineStep<int, List<int>>("generatePopulation.csx"))
         .AddDistributedSection(distribution1)
+        .AddStep(new PipelineStep<IEnumerable<int>, int>("ThrowError.csx"))
         .Build();
     }
 }

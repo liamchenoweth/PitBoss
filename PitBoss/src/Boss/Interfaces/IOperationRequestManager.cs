@@ -8,7 +8,7 @@ namespace PitBoss {
         void SetActiveOperation(OperationRequest request);
         bool ProcessResponse(OperationResponse response);
         OperationRequest FetchNextRequest(PipelineStep step);
-        void ReturnRequest(OperationRequest request);
+        void ReturnRequest(OperationRequest request, bool back=false);
         IEnumerable<OperationRequest> PendingRequests();
         IEnumerable<OperationRequest> InProgressRequests();
         IEnumerable<OperationRequest> CompletedRequests();
