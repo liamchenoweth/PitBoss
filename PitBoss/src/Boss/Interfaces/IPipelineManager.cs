@@ -11,6 +11,7 @@ namespace PitBoss {
         Pipeline GetPipeline(string name);
         PipelineModel GetPipelineVersion(string version);
         void RegisterPipelines();
+        void ClearPipelines();
         //PipelineStep GetPipelineStep(string pipeline, string pipelineName);
     }
 }

@@ -12,17 +12,17 @@ namespace PitBoss {
         private IDistributedService _memoryService;
         private IPipelineManager _pipelineManager;
         private IOperationRequestManager _requestManager;
-        private BossContext _db;
+        private IBossContextFactory _contextFactory;
 
         public DefaultPipelineRequestManager(
             IDistributedService memoryService, 
-            BossContext db, 
+            IBossContextFactory db, 
             IPipelineManager pipelineManager,
             IOperationRequestManager requestManager)
         {
             _memoryService = memoryService;
             _pipelineManager = pipelineManager;
-            _db = db;
+            _contextFactory = db;
             _requestManager = requestManager;
         }
 
@@ -42,102 +42,134 @@ namespace PitBoss {
                 var operationRequestType = typeof(OperationRequest<>).MakeGenericType(stepType);
                 genericOperation = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {operation, input, null});
             }
-            Console.WriteLine(JsonSerializer.Serialize(genericOperation));
-            _db.PipelineRequests.Add(request);
-            genericOperation.PipelineId = request.Id;
-            _db.SaveChanges();
+            using(var db = _contextFactory.GetContext())
+            {
+                db.PipelineRequests.Add(request);
+                genericOperation.PipelineId = request.Id;
+                db.SaveChanges();
+            }
             _requestManager.QueueRequest(genericOperation);
         }
 
         public void FinishRequest(OperationResponse response)
         {
-            var request = _db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
-            if(request == null) throw new Exception($"Request with ID {response.PipelineId} not found");
-            request.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
-            request.ResponseId = response.Id;
-            _db.SaveChanges();
+            using(var db = _contextFactory.GetContext())
+            {
+                var request = db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
+                if(request == null) throw new Exception($"Request with ID {response.PipelineId} not found");
+                request.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
+                request.ResponseId = response.Id;
+                db.SaveChanges();
+            }
             _memoryService.GetCache().Set($"{DefaultOperationRequestManager.CachePrefix}:{response.PipelineId}", response);
         }
 
         public IEnumerable<PipelineRequest> RequestsForPipeline(string pipelineName, bool expanded = false) {
-            var requests = _db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.PipelineName == pipelineName);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> RequestsForPipelineVersion(string pipelineVersion, bool expanded = false) {
-            var requests = _db.PipelineRequests.Where(x => x.PipelineVersion == pipelineVersion);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.PipelineVersion == pipelineVersion);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> PendingRequests(bool expanded = false) {
-            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Pending);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.Status == RequestStatus.Pending);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> InProgressRequests(bool expanded = false) {
-            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Executing);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.Status == RequestStatus.Executing);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> CompletedRequests(bool expanded = false){ 
-            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Complete);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.Status == RequestStatus.Complete);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> FailedRequests(bool expanded = false){ 
-            var requests = _db.PipelineRequests.Where(x => x.Status == RequestStatus.Failed);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.Status == RequestStatus.Failed);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public IEnumerable<PipelineRequest> AllRequests(bool expanded = false){ 
-            IQueryable<PipelineRequest> requests = _db.PipelineRequests;
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                IQueryable<PipelineRequest> requests = db.PipelineRequests;
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests;
             }
-            return requests;
         }
 
         public PipelineRequest FindRequest(string requestId, bool expanded = false)
         {
-            var requests = _db.PipelineRequests.Where(x => x.Id == requestId);
-            if(expanded)
+            using(var db = _contextFactory.GetContext())
             {
-                requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                var requests = db.PipelineRequests.Where(x => x.Id == requestId);
+                if(expanded)
+                {
+                    requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
+                }
+                return requests.ToList().FirstOrDefault();
             }
-            return requests.ToList().FirstOrDefault();
         }
 
         public void CancelRequest(string requestId)
         {
-            var request = _db.PipelineRequests.Where(x => x.Id == requestId).FirstOrDefault();
-            if(request == default) throw new KeyNotFoundException($"request \"{requestId}\" not found");
-            request.Status = RequestStatus.Cancelled;
-            _db.SaveChanges();
+            using(var db = _contextFactory.GetContext())
+            {
+                var request = db.PipelineRequests.Where(x => x.Id == requestId).FirstOrDefault();
+                if(request == default) throw new KeyNotFoundException($"request \"{requestId}\" not found");
+                request.Status = RequestStatus.Cancelled;
+                db.SaveChanges();
+            }
         }
 
         public string GetResponseJson(string requestId)

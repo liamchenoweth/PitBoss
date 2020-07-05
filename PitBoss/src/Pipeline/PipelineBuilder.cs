@@ -14,6 +14,7 @@ namespace PitBoss {
     public abstract class PipelineBuilder : IPipelineBuilder {
         internal List<PipelineStep> _steps;
         internal PipelineDescriptor _description;
+        public virtual PipelineDescriptor Description {get => _description;}
         public abstract Pipeline Build();
         public virtual bool Distributed {get => false;}
     }

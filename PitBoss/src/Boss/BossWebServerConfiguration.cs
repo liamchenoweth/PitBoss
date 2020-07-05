@@ -7,7 +7,9 @@ using Newtonsoft.Json.Converters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -16,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Extensions.Logging;
 using PitBoss.Utils;
+using PitBoss.Extensions;
 
 namespace PitBoss
 {
@@ -33,7 +36,7 @@ namespace PitBoss
             Log.Logger = LoggingUtils.ConfigureSerilog();
             services.AddSingleton<ILoggerFactory>(sc => {
                 var providerCollection = sc.GetService<LoggerProviderCollection>();
-                var factory = new SerilogLoggerFactory(null, true, providerCollection);
+                var factory = new SerilogLoggerFactory(Log.Logger, true, providerCollection);
 
                 foreach (var provider in sc.GetServices<ILoggerProvider>())
                     factory.AddProvider(provider);
@@ -44,7 +47,6 @@ namespace PitBoss
             ConfigureCache(services);
 
             services.AddSingleton<IPipelineManager, DefaultPipelineManager>();
-            //services.AddSingleton<IDistributedService, MemoryDistributedService>();
             services.AddTransient<IDistributedRequestManager, DefaultDistributedRequestManager>();
             services.AddSingleton(providers);
 
@@ -53,20 +55,21 @@ namespace PitBoss
 
             services.AddRouting();
             services.AddHttpClient();
+            services.Replace(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, NoiseFilter>());
             switch(_config["Boss:Database:UseDatabase"])
             {
                 case "Postgres":
-                    services.AddDbContext<BossContext, PostgresContext>(ServiceLifetime.Transient);
+                    services.AddSingleton<IBossContextFactory, BossContextFactory<PostgresContext>>();
                     break;
                 case "MySql":
-                    services.AddDbContext<BossContext, MySqlContext>(ServiceLifetime.Transient);
+                    services.AddSingleton<IBossContextFactory, BossContextFactory<MySqlContext>>();
                     break;
                 case "MSSQL":
-                    services.AddDbContext<BossContext, MSSQLContext>(ServiceLifetime.Transient);
+                    services.AddSingleton<IBossContextFactory, BossContextFactory<MSSQLContext>>();
                     break;
                 case "Sqlite":
                 default:
-                    services.AddDbContext<BossContext, SqliteContext>(ServiceLifetime.Transient);
+                    services.AddSingleton<IBossContextFactory, BossContextFactory<SqliteContext>>();
                     break;
             }
             services.AddLogging(l => l.AddConsole());

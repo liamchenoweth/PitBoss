@@ -39,6 +39,11 @@ namespace PitBoss
             return task.Result;
         }
 
+        public void SetGroupsStale()
+        {
+            throw new NotImplementedException("Can't set group stale with the HttpContainerManager");
+        }
+
         public async Task<IEnumerable<IOperationGroup>> GetContainersAsync()
         {
             return (await (await (_clientFactory
@@ -74,6 +79,11 @@ namespace PitBoss
             return ret;
         }
 
+        public void RemoveGroup(IOperationGroup group)
+        {
+            throw new NotImplementedException("Can't remove group with the HttpContainerManager");
+        }
+
         public void RegisterGroup(IOperationGroup group)
         {
             RegisterGroupAsync(group).Wait();
@@ -88,5 +98,15 @@ namespace PitBoss
         public void DiscoverContainers() {}
 
         public async Task DiscoverContainersAsync() {}
+
+        public void RunShutdown()
+        {
+            throw new NotImplementedException("HttpContainerManager cannot shutdown containers");
+        }
+
+        public async Task RunShutdownAsync()
+        {
+            throw new NotImplementedException("HttpContainerManager cannot shutdown containers");
+        }
     }
 }

@@ -40,11 +40,19 @@ namespace PitBoss
         public async Task BalanceGroupAsync(IOperationGroup group)
         {
             var currentCount = await group.CurrentSizeAsync();
-            if(currentCount < group.TargetSize)
+            if(currentCount < group.TargetSize && !group.Stale)
             {
                 for(var x = currentCount; x < group.TargetSize; x++)
                 {
                     await group.AddContainerAsync(new DockerComposeOperationContainer(group.PipelineStep, _factory, _configuration, _logger, _docker));
+                }
+            }
+            if(group.Stale)
+            {
+                var containers = await group.GetContainersAsync();
+                foreach(var container in containers)
+                {
+                    await group.RemoveContainerAsync(container);
                 }
             }
         }

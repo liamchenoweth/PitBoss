@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using PitBoss.Utils;
@@ -17,14 +18,16 @@ namespace PitBoss {
         private const string CompileLocation = "compiled";
         private ILogger<IPipelineManager> _logger;
         private List<Pipeline> _pipelines;
-        private BossContext _context;
+        private IBossContextFactory _contextFactory;
+        private Dictionary<string, WeakReference> _references;
 
         public DefaultPipelineManager(
             ILogger<IPipelineManager> logger,
-            BossContext context
+            IBossContextFactory context
         ) {
             _logger = logger;
-            _context = context;
+            _contextFactory = context;
+            _references = new Dictionary<string, WeakReference>();
         }
 
         public IEnumerable<Pipeline> Pipelines 
@@ -44,8 +47,18 @@ namespace PitBoss {
             return task.Result;
         }
 
+        public void ClearPipelines()
+        {
+            _pipelines?.RemoveAll(x => true);
+        }
+
         public async Task<IEnumerable<Pipeline>> CompilePipelinesAsync(string directory)
         {
+            if(Directory.Exists(CompileLocation))
+            {
+                Directory.Delete(CompileLocation, true);
+                Directory.CreateDirectory(CompileLocation);
+            }
             _logger.LogInformation($"Begining pipeline compilation in {Path.GetFullPath(directory)}");
             if(!Directory.Exists(directory)) throw new DirectoryNotFoundException("Pipeline directory must exist.");
             var files = Directory.GetFiles(directory, "*.csx");
@@ -65,20 +78,32 @@ namespace PitBoss {
                 }
             }
             _logger.LogInformation($"Successfully compiled {compiledFiles.Count} scripts");
-
-            var pipelines = new List<List<Pipeline>>();
+            _pipelines?.RemoveAll(x => true);
+            var pipelines = new List<Pipeline>();
             foreach(var file in compiledFiles)
             {
                 try
                 {
-                    pipelines.Add(BuildDefinition(file));
+                    // Clean up Assembly Load Context
+                    if(_references.TryGetValue(file, out var reference))
+                    {
+                        for (int i = 0; reference.IsAlive && (i < 10); i++)
+                        {
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            await Task.Delay(1000);
+                        }
+                        _references.Remove(file);
+                    }
+                    pipelines.AddRange(BuildDefinition(file, out var AlcWeakRef));
+                    _references.Add(file, AlcWeakRef);
                 }
                 catch(Exception e)
                 {
                     _logger.LogError(e, $"Build failed, skipping failed file {file}");
                 }
             }
-            _pipelines = pipelines.SelectMany(i => i).ToList();
+            _pipelines = pipelines;
             _logger.LogInformation($"Successfully created {_pipelines.Count} pipelines");
             Ready = true;
             return _pipelines;
@@ -91,22 +116,27 @@ namespace PitBoss {
             return $"{CompileLocation}/{Path.GetFileNameWithoutExtension(location)}.dll";
         }
 
-        private List<Pipeline> BuildDefinition(string location) {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private List<Pipeline> BuildDefinition(string location, out WeakReference reference) {
             // Load in our dll using the pipeline context
             var fullLoaction = Path.GetFullPath(location);
             var dir = Path.GetFullPath(Path.GetDirectoryName(location));
-            PipelineLoadContext context = new PipelineLoadContext(dir);
             //var dll = context.LoadFromAssemblyPath(fullLoaction);
-            var dll = Assembly.LoadFile(fullLoaction);
+            var context = new PipelineLoadContext(Directory.GetCurrentDirectory(), fullLoaction);
+            reference = new WeakReference(context, trackResurrection: true);
+            var dll = context.LoadFromAssemblyPath(fullLoaction);
 
             // Get all types that we care about
             // Then create the pipelines from those types
             // Finally set the DLL location so we can send it off to the workers
-            var types = dll.GetTypes().Where(x => x.GetInterfaces().Select(y => y.Name).Contains(typeof(IPipelineBuilder).Name));
+            //var types = dll.GetTypes().Where(x => x.GetInterfaces().Select(y => y.Name).Contains(typeof(IPipelineBuilder).Name));
+            var types = dll.GetTypes().Where(x => typeof(IPipelineBuilder).IsAssignableFrom(x)).ToList();
             if(types.Count() == 0) throw new Exception($"No types that implement IPipelineBuilder found in {location}");
-            var buidlers = types.Select(x => (IPipelineBuilder)Activator.CreateInstance(x)).Where(x => x != null).ToList();
-            var pipelines = buidlers.Select(x => x.Build()).ToList();
+            var inter = types.Select(x => (IPipelineBuilder)Activator.CreateInstance(x)).ToList();
+            var builders = inter.Where(x => x != null).ToList();
+            var pipelines = builders.Select(x => x.Build()).ToList();
             pipelines.ForEach(x => x.DllLocation = location);
+            context.Unload();
             return pipelines;
         }
 
@@ -117,37 +147,43 @@ namespace PitBoss {
 
         public PipelineModel GetPipelineVersion(string version)
         {
-            var pipeline = _context.Pipelines.Include(x => x.Steps).ThenInclude(x => x.Step).FirstOrDefault(x => x.Version == version);
-            pipeline.Steps = pipeline.Steps.OrderBy(x => x.Order).ToList();
-            return pipeline;
+            using(var context = _contextFactory.GetContext())
+            {
+                var pipeline = context.Pipelines.Include(x => x.Steps).ThenInclude(x => x.Step).FirstOrDefault(x => x.Version == version);
+                pipeline.Steps = pipeline.Steps.OrderBy(x => x.Order).ToList();
+                return pipeline;
+            }
         }
 
         public void RegisterPipelines()
         {
-            _logger.LogInformation("Regestering pipeline versions");
-            var pipelineModels = _pipelines.Select(x => x.ToModel());
-            var stepModels = _pipelines.SelectMany(x => x.Steps.Select(y => y.ToModel()));
-            foreach(var model in stepModels)
+            using(var context = _contextFactory.GetContext())
             {
-                _context.PipelineSteps.AddIfNotExists(x => x.HashCode == model.HashCode, model);
-            }
-            foreach(var pipeline in pipelineModels)
-            {
-                var maps = pipeline.Steps;
-                pipeline.Steps = null;
-                _context.Pipelines.AddIfNotExists(x => x.Version == pipeline.Version, pipeline);
-                for(var i = 0; i < maps.Count; i++)
+                _logger.LogInformation("Regestering pipeline versions");
+                var pipelineModels = _pipelines.Select(x => x.ToModel());
+                var stepModels = _pipelines.SelectMany(x => x.Steps.Select(y => y.ToModel()));
+                foreach(var model in stepModels)
                 {
-                    var map = maps[i];
-                    map.Version = map.Pipeline.Version;
-                    map.StepHash = map.Step.HashCode;
-                    map.Step = null;
-                    map.Pipeline = null;
-                    map.Order = i;
-                    _context.PipelineStepMap.AddIfNotExists(x => x.Version == map.Version && x.StepHash == map.StepHash, map);
+                    context.PipelineSteps.AddIfNotExists(x => x.HashCode == model.HashCode, model);
                 }
+                foreach(var pipeline in pipelineModels)
+                {
+                    var maps = pipeline.Steps;
+                    pipeline.Steps = null;
+                    context.Pipelines.AddIfNotExists(x => x.Version == pipeline.Version, pipeline);
+                    for(var i = 0; i < maps.Count; i++)
+                    {
+                        var map = maps[i];
+                        map.Version = map.Pipeline.Version;
+                        map.StepHash = map.Step.HashCode;
+                        map.Step = null;
+                        map.Pipeline = null;
+                        map.Order = i;
+                        context.PipelineStepMap.AddIfNotExists(x => x.Version == map.Version && x.StepHash == map.StepHash, map);
+                    }
+                }
+                context.SaveChanges();
             }
-            _context.SaveChanges();
         }
     }
 }

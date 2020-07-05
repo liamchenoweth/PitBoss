@@ -15,9 +15,11 @@ namespace JobContainer
 {
     public class Job
     {
+        public static CancellationTokenSource serviceToken;
         public static async Task Main()
         {
             CancellationTokenSource source = new CancellationTokenSource();
+            serviceToken = source;
             await StartJobServer(80, source.Token);
         }
 
@@ -27,7 +29,7 @@ namespace JobContainer
             var host = server.StartWebHost(port);
             var logger = host.Services.GetService<ILogger<Job>>();
             logger.LogInformation($"Starting new job server on url: http://localhost:{port}");
-
+            
             await host.Services.GetService<IOperationService>().PollRequests(token);
         }
     }

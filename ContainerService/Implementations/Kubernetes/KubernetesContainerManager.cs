@@ -55,6 +55,14 @@ namespace PitBoss {
             throw new Exception($"Container group does not exist for {step.Name}");
         }
 
+        public void SetGroupsStale()
+        {
+            foreach(var group in _containers)
+            {
+                group.Value.Stale = true;
+            }
+        }
+
         public void RegisterGroup(IOperationGroup group)
         {
             RegisterGroupAsync(group).Wait();
@@ -62,8 +70,17 @@ namespace PitBoss {
 
         public async Task RegisterGroupAsync(IOperationGroup group)
         {
-            if(_containers.ContainsKey(group.PipelineStep.Name)) return;
+            if(_containers.ContainsKey(group.PipelineStep.Name))
+            {
+                _containers[group.PipelineStep.Name].Stale = false;
+                return;
+            }
             _containers.Add(group.PipelineStep.Name, group);
+        }
+
+        public void RemoveGroup(IOperationGroup group)
+        {
+            _containers.Remove(group.PipelineStep.Name);
         }
 
         public void DiscoverContainers() 
@@ -86,6 +103,21 @@ namespace PitBoss {
                 });
                 await _containers[group.Key].SetContainersAsync(groupContainers);
             }
+        }
+
+        public void RunShutdown()
+        {
+            RunShutdownAsync().GetAwaiter().GetResult();
+        }
+
+        public async Task RunShutdownAsync()
+        {
+            foreach(var pair in _containers)
+            {
+                var group = pair.Value;
+                await group.ShutdownGroupAsync();
+            }
+            _containers.Clear();
         }
     }
 }

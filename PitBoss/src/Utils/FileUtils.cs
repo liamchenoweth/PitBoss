@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;  
+using System.Text;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace PitBoss.Utils
@@ -47,6 +49,38 @@ namespace PitBoss.Utils
                 }  
                 return builder.ToString();  
             }
+        }
+
+        public static void CreatePipelineWatcher(string location, Action<object, FileSystemEventArgs> handler)
+        {
+            FileSystemWatcher watcher = new FileSystemWatcher();
+            watcher.Path = location;
+            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.DirectoryName | NotifyFilters.FileName;
+            watcher.Changed += new FileSystemEventHandler(handler);
+            watcher.Created += new FileSystemEventHandler(handler);
+            watcher.Renamed += new RenamedEventHandler(handler);
+            watcher.Deleted += new FileSystemEventHandler(handler);
+            watcher.EnableRaisingEvents = true;
+        }
+
+        public static async Task<string> GetDirectoryHash(string location)
+        {
+            if(!Directory.Exists(location)) throw new DirectoryNotFoundException($"No directory found at {location}");
+            var files = Directory.GetFiles(location, "*", new EnumerationOptions() { RecurseSubdirectories = true });
+            var fileHashList = new List<string>();
+            foreach(var file in files)
+            {
+                fileHashList.Add($"{file}:{await GetFileHash(file)}");
+            }
+            fileHashList.Sort();
+            return Sha256Hash(string.Join(',', fileHashList));
+        }
+
+        public static async Task<string> GetFileHash(string location)
+        {
+            if(!File.Exists(location)) throw new FileNotFoundException($"No directory found at {location}");
+            var content = await File.ReadAllTextAsync(location);
+            return Sha256Hash(content);
         }
     }
 }

@@ -10,14 +10,14 @@ namespace PitBoss
     public class DefaultDistributedRequestManager : IDistributedRequestManager
     {
         private IPipelineManager _pipelineManager;
-        private BossContext _context;
+        private IBossContextFactory _contextFactory;
 
         public DefaultDistributedRequestManager(
             IPipelineManager pipelineManager,
-            BossContext context)
+            IBossContextFactory context)
         {
             _pipelineManager = pipelineManager;
-            _context = context;
+            _contextFactory = context;
         }
 
         public IEnumerable<OperationRequest> GenerateDistributedRequest(
@@ -34,19 +34,22 @@ namespace PitBoss
                 .GetMethod.Invoke(response, null);
             var distributedRequest = new DistributedOperationRequest(pipeRequest, targetStep.Id, targetStep.DistributedEndId, instigatingRequest);
             distributedRequest.Status = RequestStatus.Executing;
-            _context.DistributedOperationRequests.Add(distributedRequest);
-            _context.SaveChanges();
-            var requests = resultValue.Cast<object>().Select(x => {
-                var request = new OperationRequest(pipeRequest, targetStep.Id, distributedRequest);
-                request.CallbackUri = instigatingRequest.CallbackUri;
-                request.ParentRequestId = distributedRequest.Id;
-                var operationRequestType = typeof(OperationRequest<>).MakeGenericType(new Type[] {requestType});
-                var properRequest = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {request, x, instigatingRequest});
-                return properRequest;
-            }).ToList();
-            distributedRequest.SeedingRequestIds = requests.Select(x => new DistributedRequestSeed { OperationRequest = x, DistributedOperationRequest = distributedRequest }).ToList();
-            _context.SaveChanges();
-            return requests;
+            using(var context = _contextFactory.GetContext())
+            {
+                context.DistributedOperationRequests.Add(distributedRequest);
+                context.SaveChanges();
+                var requests = resultValue.Cast<object>().Select(x => {
+                    var request = new OperationRequest(pipeRequest, targetStep.Id, distributedRequest);
+                    request.CallbackUri = instigatingRequest.CallbackUri;
+                    request.ParentRequestId = distributedRequest.Id;
+                    var operationRequestType = typeof(OperationRequest<>).MakeGenericType(new Type[] {requestType});
+                    var properRequest = (OperationRequest) Activator.CreateInstance(operationRequestType, new object[] {request, x, instigatingRequest});
+                    return properRequest;
+                }).ToList();
+                distributedRequest.SeedingRequestIds = requests.Select(x => new DistributedRequestSeed { OperationRequest = x, DistributedOperationRequest = distributedRequest }).ToList();
+                context.SaveChanges();
+                return requests;
+            }
         }
     }
 }

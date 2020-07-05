@@ -7,6 +7,7 @@ namespace PitBoss
     {
         void InflateFromDescription(IPipelineManager manager, GroupDescription descriptions);
         PipelineStep PipelineStep {get;}
+        bool Stale {get; set;}
         int CurrentSize();
         Task<int> CurrentSizeAsync();
         int TargetSize {get;}
@@ -30,5 +31,7 @@ namespace PitBoss
         Task<IEnumerable<IOperationContainer>> GetContainersAsync();
         GroupDescription GetDescription();
         Task<GroupDescription> GetDescriptionAsync();
+        void ShutdownGroup();
+        Task ShutdownGroupAsync();
     }
 }

@@ -12,6 +12,7 @@ namespace PitBoss
     {
         public PipelineStep PipelineStep {get; private set;}
         public int TargetSize {get; private set;}
+        public bool Stale {get; set;} = false;
         private List<IOperationContainer> _containers;
 
         public DefaultOperationGroup() { _containers = new List<IOperationContainer>(); }
@@ -118,7 +119,6 @@ namespace PitBoss
 
         public async Task SendRequestAsync(OperationRequest request)
         {
-            Console.WriteLine(JsonConvert.SerializeObject(_containers));
             foreach(var container in _containers)
             {
                 var status = await container.GetContainerStatusAsync();
@@ -229,6 +229,20 @@ namespace PitBoss
                 CurrentSize = await CurrentSizeAsync(),
                 Status = await GetGroupHealthAsync()
             };
+        }
+
+        public void ShutdownGroup()
+        {
+            ShutdownGroupAsync().GetAwaiter().GetResult();
+        }
+
+        public async Task ShutdownGroupAsync()
+        {
+            foreach(var container in _containers)
+            {
+                await container.SendShutdownAsync();
+            }
+            _containers.RemoveAll(x => true);
         }
     }
 }

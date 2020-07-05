@@ -1,4 +1,5 @@
 using Serilog;
+using Serilog.Events;
 
 namespace PitBoss.Utils {
     public static class LoggingUtils 

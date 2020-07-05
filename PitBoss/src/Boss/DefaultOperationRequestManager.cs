@@ -15,12 +15,12 @@ namespace PitBoss {
         private IDistributedRequestManager _distributedRequestManager;
         //private IPipelineRequestManager _pipelineRequestManager;
         public const string CachePrefix = "operation-request";
-        private BossContext _db;
+        private IBossContextFactory _contextFactory;
         private ILogger _logger;
 
         public DefaultOperationRequestManager(
             IDistributedService memoryService, 
-            BossContext db, 
+            IBossContextFactory db, 
             IPipelineManager pipelineManager,
             IConfiguration configuration,
             IDistributedRequestManager distributedRequestManager,
@@ -29,7 +29,7 @@ namespace PitBoss {
         {
             _memoryService = memoryService;
             _pipelineManager = pipelineManager;
-            _db = db;
+            _contextFactory = db;
             _configuration = configuration;
             _distributedRequestManager = distributedRequestManager;
             _logger = logger;
@@ -44,83 +44,92 @@ namespace PitBoss {
             request.Queued = DateTime.Now;
             request.Status = RequestStatus.Pending;
             request.CallbackUri = $"{_configuration["Boss:Host:Scheme"]}://{_configuration["Boss:Host:Uri"]}:{_configuration["Boss:Host:Port"]}";
-            if(!_db.OperationRequests.Contains(request))
+            using(var db = _contextFactory.GetContext())
             {
-                _db.OperationRequests.Add(request);
+                if(!db.OperationRequests.Contains(request))
+                {
+                    db.OperationRequests.Add(request);
+                }
+                db.SaveChanges();
             }
-            _db.SaveChanges();
             queue.Push(request);
             SetActiveOperation(request);
         }
 
         public void SetActiveOperation(OperationRequest request)
         {
-            var pipeRequest = _db.PipelineRequests.Where(x => x.Id == request.PipelineId).FirstOrDefault();
-            if(pipeRequest != default)
+            using(var db = _contextFactory.GetContext())
             {
-                pipeRequest.CurrentRequest = request;
-                pipeRequest.Status = RequestStatus.Executing;
-                _db.SaveChanges();
+                var pipeRequest = db.PipelineRequests.Where(x => x.Id == request.PipelineId).FirstOrDefault();
+                if(pipeRequest != default)
+                {
+                    pipeRequest.CurrentRequest = request;
+                    pipeRequest.Status = RequestStatus.Executing;
+                    db.SaveChanges();
+                }
             }
         }
 
         public bool ProcessResponse(OperationResponse response)
         {
-            if(_db.OperationResponses.SingleOrDefault(x => x.Id == response.Id) != default)
+            using(var db = _contextFactory.GetContext())
             {
-                _db.Entry(response);
-            }
-            else
-            {
-                _db.OperationResponses.Add(response);
-            }
-            _db.SaveChanges();
-            var pipeline = _pipelineManager.GetPipeline(response.PipelineName);
-            var currentStep = pipeline.Steps.Single(x => x.Id == response.PipelineStepId);
-            var nextStep = currentStep.GetNextStep(response);
-            if(pipeline == null) throw new Exception($"Pipeline {response.PipelineName} not found");
-            var pipeRequest = _db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
-            var dbRequest = _db.OperationRequests.Single(x => x.Id == response.Id);
-            if(!response.Success && dbRequest.RetryCount < 5)
-            {
-                _logger.LogWarning($"Operation: {response.Id} has failed.");
-                var retryStrategy = pipeline.Description.RetryStrategy;
-                if(currentStep.RetryStrategy != RetryStrategy.Inherit) retryStrategy = currentStep.RetryStrategy;
-                dbRequest.Status = RequestStatus.Pending;
-                dbRequest.RetryCount += 1;
-                QueueRequest(dbRequest);
-                _db.SaveChanges();
-                return false;
-            }
-            dbRequest.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
-            dbRequest.Completed = DateTime.Now;
-            _db.SaveChanges();
-            if(currentStep.IsDistributedEnd) return false;
-            if(string.IsNullOrEmpty(nextStep) || !response.Success || pipeRequest.Status == RequestStatus.Cancelled)
-            {
-                return true;
-            }
-            var nextStepObject = pipeline.Steps.Single(x => x.Id == nextStep);
-            if(nextStepObject.IsDistributedStart)
-            {
-                var distributedRequests = _distributedRequestManager.GenerateDistributedRequest(pipeRequest, response, FindRequest(response.Id), nextStepObject);
-                foreach(var newRequest in distributedRequests)
+                if(db.OperationResponses.SingleOrDefault(x => x.Id == response.Id) != default)
                 {
-                    QueueRequest(newRequest);
+                    db.Entry(response);
                 }
+                else
+                {
+                    db.OperationResponses.Add(response);
+                }
+                db.SaveChanges();
+                var pipeline = _pipelineManager.GetPipeline(response.PipelineName);
+                var currentStep = pipeline.Steps.Single(x => x.Id == response.PipelineStepId);
+                var nextStep = currentStep.GetNextStep(response);
+                if(pipeline == null) throw new Exception($"Pipeline {response.PipelineName} not found");
+                var pipeRequest = db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
+                var dbRequest = db.OperationRequests.Single(x => x.Id == response.Id);
+                if(!response.Success && dbRequest.RetryCount < 5)
+                {
+                    _logger.LogWarning($"Operation: {response.Id} has failed.");
+                    var retryStrategy = pipeline.Description.RetryStrategy;
+                    if(currentStep.RetryStrategy != RetryStrategy.Inherit) retryStrategy = currentStep.RetryStrategy;
+                    dbRequest.Status = RequestStatus.Pending;
+                    dbRequest.RetryCount += 1;
+                    QueueRequest(dbRequest);
+                    db.SaveChanges();
+                    return false;
+                }
+                dbRequest.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
+                dbRequest.Completed = DateTime.Now;
+                db.SaveChanges();
+                if(currentStep.IsDistributedEnd) return false;
+                if(string.IsNullOrEmpty(nextStep) || !response.Success || pipeRequest.Status == RequestStatus.Cancelled)
+                {
+                    return true;
+                }
+                var nextStepObject = pipeline.Steps.Single(x => x.Id == nextStep);
+                if(nextStepObject.IsDistributedStart)
+                {
+                    var distributedRequests = _distributedRequestManager.GenerateDistributedRequest(pipeRequest, response, FindRequest(response.Id), nextStepObject);
+                    foreach(var newRequest in distributedRequests)
+                    {
+                        QueueRequest(newRequest);
+                    }
+                    return false;
+                }
+                var respType = response.GetType().GenericTypeArguments[0];
+                var request = (OperationRequest) Activator.CreateInstance(typeof(OperationRequest<>).MakeGenericType(new Type[]{respType}));
+                request.PipelineId = response.PipelineId;
+                request.PipelineName = response.PipelineName;
+                request.PipelineStepId = nextStep;
+                request.ParentRequestId = dbRequest.ParentRequestId;
+                request.InstigatingRequestId = dbRequest.Id;
+                var resp = response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == response.GetType()).GetGetMethod().Invoke(response, null);
+                request.GetType().GetProperty("Parameter").GetSetMethod().Invoke(request, new object[] { resp });
+                QueueRequest(request);
                 return false;
             }
-            var respType = response.GetType().GenericTypeArguments[0];
-            var request = (OperationRequest) Activator.CreateInstance(typeof(OperationRequest<>).MakeGenericType(new Type[]{respType}));
-            request.PipelineId = response.PipelineId;
-            request.PipelineName = response.PipelineName;
-            request.PipelineStepId = nextStep;
-            request.ParentRequestId = dbRequest.ParentRequestId;
-            request.InstigatingRequestId = dbRequest.Id;
-            var resp = response.GetType().GetProperties().Single(x => x.Name == "Result" && x.DeclaringType == response.GetType()).GetGetMethod().Invoke(response, null);
-            request.GetType().GetProperty("Parameter").GetSetMethod().Invoke(request, new object[] { resp });
-            QueueRequest(request);
-            return false;
         }
 
         public OperationRequest FetchNextRequest(PipelineStep Operation) { 
@@ -129,12 +138,15 @@ namespace PitBoss {
             var queue = _memoryService.GetQueue(requestString, requestType);
             var item = queue.PopObject() as OperationRequest;
             if(item == null) return null;
-            var dbItem = _db.OperationRequests.Where(x => x.Id == item.Id).FirstOrDefault();
-            if(dbItem != null)
+            using(var db = _contextFactory.GetContext())
             {
-                dbItem.Status = RequestStatus.Executing;
-                dbItem.Started = DateTime.Now;
-                _db.SaveChanges();
+                var dbItem = db.OperationRequests.Where(x => x.Id == item.Id).FirstOrDefault();
+                if(dbItem != null)
+                {
+                    dbItem.Status = RequestStatus.Executing;
+                    dbItem.Started = DateTime.Now;
+                    db.SaveChanges();
+                }
             }
             return item;
         }
@@ -152,37 +164,58 @@ namespace PitBoss {
             {
                 queue.Push(request);
             }
-            var dbRequest = _db.OperationRequests.Where(x => x.Id == request.Id).FirstOrDefault();
-            if(dbRequest == null) return;
-            dbRequest.Status = RequestStatus.Pending;
-            dbRequest.Started = default;
-            _db.SaveChanges();
+            using(var db = _contextFactory.GetContext())
+            {
+                var dbRequest = db.OperationRequests.Where(x => x.Id == request.Id).FirstOrDefault();
+                if(dbRequest == null) return;
+                dbRequest.Status = RequestStatus.Pending;
+                dbRequest.Started = default;
+                db.SaveChanges();
+            }
         }
 
         public IEnumerable<OperationRequest> PendingRequests() {
-            return _db.OperationRequests.Where(x => x.Status == RequestStatus.Pending);
+            using(var db = _contextFactory.GetContext())
+            {
+                return db.OperationRequests.Where(x => x.Status == RequestStatus.Pending);
+            }
         }
 
         public IEnumerable<OperationRequest> InProgressRequests() {
-            return _db.OperationRequests.Where(x => x.Status == RequestStatus.Executing);
+            using(var db = _contextFactory.GetContext())
+            {
+                return db.OperationRequests.Where(x => x.Status == RequestStatus.Executing);
+            }
         }
 
-        public IEnumerable<OperationRequest> CompletedRequests(){ 
-            return _db.OperationRequests.Where(x => x.Status == RequestStatus.Complete);
+        public IEnumerable<OperationRequest> CompletedRequests(){
+            using(var db = _contextFactory.GetContext())
+            { 
+                return db.OperationRequests.Where(x => x.Status == RequestStatus.Complete);
+            }
         }
 
-        public IEnumerable<OperationRequest> FailedRequests(){ 
-            return _db.OperationRequests.Where(x => x.Status == RequestStatus.Failed);
+        public IEnumerable<OperationRequest> FailedRequests(){
+            using(var db = _contextFactory.GetContext())
+            { 
+                return db.OperationRequests.Where(x => x.Status == RequestStatus.Failed);
+            }
         }
 
         public OperationRequest FindRequest(string requestId)
         {
-            return _db.OperationRequests.Where(x => x.Id == requestId).FirstOrDefault();
+            using(var db = _contextFactory.GetContext())
+            {
+                return db.OperationRequests.Where(x => x.Id == requestId).FirstOrDefault();
+            }
         }
 
         public IEnumerable<OperationRequest> FindOperationsForRequest(string requestId)
         {
-            return _db.OperationRequests.Where(x => x.PipelineId == requestId);
+            using(var db = _contextFactory.GetContext())
+            {
+                return db.OperationRequests.Where(x => x.PipelineId == requestId);
+            }
         }
     }
 }

@@ -101,4 +101,23 @@ namespace PitBoss
             return base.SaveChanges();
         }
     }
+
+    public interface IBossContextFactory
+    {
+        BossContext GetContext();
+    }
+
+    public class BossContextFactory<TContext> : IBossContextFactory where TContext : BossContext
+    {
+        private IConfiguration _configuration;
+        public BossContextFactory(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        public BossContext GetContext()
+        {
+            return (BossContext) Activator.CreateInstance(typeof(TContext), new object[]{_configuration});
+        }
+    }
 }

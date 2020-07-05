@@ -73,7 +73,7 @@ namespace PitBoss
                     _clientFactory.CreateClient().GetAsync($"http://{Url}/container/status").Wait();
                     return;
                 }
-                catch(Exception e)
+                catch(Exception)
                 {
                     Task.Delay(5000).Wait();
                 }
@@ -172,9 +172,16 @@ namespace PitBoss
 
         public async Task<bool> SendShutdownAsync()
         {
-            var client = _clientFactory.CreateClient();
-            var response = await client.PostAsync($"http://{Url}/shutdown", null);
-            return (await response.Content.DeserialiseAsync<OperationStatus>()).ContainerStatus == ContainerStatus.ShuttingDown;
+            try
+            {
+                var client = _clientFactory.CreateClient();
+                var response = await client.PostAsync($"http://{Url}/shutdown", null);
+                return (await response.Content.DeserialiseAsync<OperationStatus>()).ContainerStatus == ContainerStatus.ShuttingDown;
+            }catch(Exception e)
+            {
+                _logger.LogError(e, "Failed to shutdown container, may become orphened");
+                return false;
+            }
         }
 
         public void ForceShutdown()

@@ -48,7 +48,6 @@ namespace PitBoss {
                     if(Path.IsPathRooted(file.FileName)) baseLocation = "";
                     var location = Path.GetFullPath($"{baseLocation}{file.FileName}");
                     ensureLocation(Directory.GetParent(location).FullName);
-                    Console.WriteLine(location);
                     using(var fileStream = new FileStream(location, FileMode.Create))
                     {
                         await file.CopyToAsync(fileStream);

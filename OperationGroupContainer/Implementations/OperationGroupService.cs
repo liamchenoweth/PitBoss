@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 using System.IO;
 using System;
 using PitBoss.Utils;
@@ -15,6 +17,48 @@ namespace PitBoss {
         private IContainerManager _containerManager;
         private IOperationRequestManager _operationRequestManager;
         private ILogger<OperationGroupService> _logger;
+        private string _currentPipelineHash;
+        private string PipelineLocation { 
+            get {
+                var pipelineLocation = _configuration["Boss:Pipelines:Location"];
+                if(!Path.IsPathRooted(pipelineLocation))
+                {
+                    pipelineLocation = $"{FileUtils.GetBasePath()}/{pipelineLocation}";
+                }
+                return pipelineLocation;
+            }
+        }
+
+        private string ScriptsLocation { 
+            get {
+                var scriptsLocation = _configuration["Boss:Scripts:Location"];
+                if(!Path.IsPathRooted(scriptsLocation))
+                {
+                    scriptsLocation = $"{FileUtils.GetBasePath()}/{scriptsLocation}";
+                }
+                return scriptsLocation;
+            }
+        }
+
+        private List<string> AdditionalLocation { 
+            get {
+                var additionalLocation = new List<string>();
+                _configuration.Bind("Boss:Scripts:AdditionalLocations", additionalLocation);
+                if(!additionalLocation.Any()) return new List<string>();
+                return additionalLocation.Select(x => Path.IsPathRooted(x) ? x : $"{FileUtils.GetBasePath()}/{x}").ToList();
+            }
+        }
+
+        private List<string> AllScriptLocations {
+            get {
+                var pipelineLocation = PipelineLocation;
+                var scripts = ScriptsLocation;
+                var additional = AdditionalLocation;
+                var ret = new List<string>() { pipelineLocation, scripts };
+                ret.AddRange(additional);
+                return ret;
+            }
+        }
 
         public OperationGroupService(
             IPipelineManager pipelineManager, 
@@ -33,23 +77,13 @@ namespace PitBoss {
         public async Task MonitorRequests(CancellationToken cancelationToken)
         {
             // Compile pipelines
-            var pipelineLocation = _configuration["Boss:Pipelines:Location"];
-            if(!Path.IsPathRooted(pipelineLocation))
-            {
-                pipelineLocation = $"{FileUtils.GetBasePath()}/{pipelineLocation}";
-            }
-            await _pipelineManager.CompilePipelinesAsync(pipelineLocation);
-            // Poll for new containers
-            // await _containerManager.DiscoverContainersAsync();
-            // wait for ContainerService to discover containers
-            while(!_containerManager.Ready)
-            {
-                _logger.LogInformation("Waiting for containers to be discovered");
-                await Task.Delay(5000); // TODO: Maybe make this configurable
-            }
-            _logger.LogInformation("Begin waiting for incoming requests");
+
             while(!cancelationToken.IsCancellationRequested)
             {
+                if(await CheckPipelinesUpdated(AllScriptLocations))
+                {
+                    await LoadPipelines();
+                }
                 // Just keep polling, polling, polling...
                 foreach(var pipeline in _pipelineManager.Pipelines)
                 {
@@ -111,6 +145,19 @@ namespace PitBoss {
             }
             _logger.LogInformation("Shutting down the Operation service");
             // Do our shutdown tasks
+        }
+
+        public async Task<bool> CheckPipelinesUpdated(List<string> directories) {
+            var hashs = await Task.WhenAll(directories.Select(async x => $"{x}:{await FileUtils.GetDirectoryHash(x)}"));
+            var newHash = FileUtils.Sha256Hash(string.Join(',',hashs));
+            var change = newHash != _currentPipelineHash;
+            _currentPipelineHash = newHash;
+            return change;
+        }
+
+        public async Task LoadPipelines()
+        {
+            _pipelineManager.CompilePipelines(PipelineLocation);
         }
     }
 }

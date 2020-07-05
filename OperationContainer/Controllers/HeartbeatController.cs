@@ -18,7 +18,7 @@ namespace PitBoss {
         [HttpPost("shutdown")]
         public ActionResult Shutdown()
         {
-            _lifetime.StopApplication();
+            JobContainer.Job.serviceToken.Cancel();
             return Ok(_containerController.ContainerStatus());
         }
     }

@@ -23,8 +23,10 @@ class Builder : IPipelineBuilder {
 
         return new PipelineBuilder<int>(desc)
         .AddStep(new PipelineStep<int, List<int>>("generatePopulation.csx"))
-        .AddDistributedSection(distribution1)
-        .AddStep(new PipelineStep<IEnumerable<int>, int>("ThrowError.csx"))
+        .AddStep(new PipelineStep<List<int>, evaluatePopOutput>("evaluatePopulation.csx"))
+        // .AddDistributedSection(distribution1)
+        // .AddStep(new PipelineStep<IEnumerable<int>, int>("ThrowError.csx"))
+        // .AddStep(new PipelineStep<int, int>("increment.csx"))
         .Build();
     }
 }
