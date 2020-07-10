@@ -19,3 +19,8 @@ export function getHealthSymbol(text)
     if(text === "Warning") return <Warning style={{color: "orange"}}/>;
     if(text === "Unhealthy") return <Unhealthy style={{color: "red"}}/>;
 }
+
+export function sum(array)
+{
+    return array.reduce((t, x) => t + x);
+}

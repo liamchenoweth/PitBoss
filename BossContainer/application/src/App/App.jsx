@@ -19,10 +19,12 @@ import {
   Switch,
   Route,
   Link,
-  useRouteMatch
+  useRouteMatch,
+  Redirect
 } from "react-router-dom";
 
 // Pages
+import Dash from '../Dash/Dash';
 import Pipelines from '../Pipelines/Pipelines.jsx';
 import Operations from '../Operations/Operations';
 import Requests from '../Requests/Requests';
@@ -79,7 +81,7 @@ function Menu() {
   return(
     <div>
       <List>
-        <MenuItem name="Home" icon={<HomeIcon/>} link="/"/>
+        {/*<MenuItem name="Home" icon={<HomeIcon/>} link="/"/>*/}
         <MenuItem name="Pipelines" icon={<PipelineIcon/>} link="/pipelines"/>
         <MenuItem name="Operations" icon={<OperationsIcon/>} link="/operations"/>
         <MenuItem name="Requests" icon={<RequestsIcon/>} link="/requests"/>
@@ -107,7 +109,7 @@ function App() {
         <main className={classes.mainWindow}>
           <Switch>
             <Route exact path="/">
-              Home
+              <Redirect to="/pipelines"/>{/*<Dash/>*/}
             </Route>
             <Route path="/pipelines">
               <Pipelines/>

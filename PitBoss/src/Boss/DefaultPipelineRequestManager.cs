@@ -72,7 +72,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -84,7 +84,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -96,7 +96,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -108,7 +108,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -120,7 +120,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -132,7 +132,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 
@@ -144,7 +144,7 @@ namespace PitBoss {
                 {
                     requests = requests.Include(x => x.Response).Include(x => x.CurrentRequest);
                 }
-                return requests;
+                return requests.ToList();
             }
         }
 

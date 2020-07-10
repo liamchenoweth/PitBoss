@@ -99,7 +99,6 @@ function PipelineList() {
                         requests: Get(`/api/pipelines/${x.name}/${x.version}/requests`, null)
                     }
                 });
-                console.log(pipesPromise.length);
                 var pipes = [];
                 for(var i = 0; i < pipesPromise.length; i++)
                 {

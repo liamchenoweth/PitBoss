@@ -9,12 +9,12 @@ using PitBoss.Extensions;
 
 namespace PitBoss
 {
-    public class ConatinerController : Controller
+    public class ContainerController : Controller
     {
         private IHttpClientFactory _clientFactory;
         private IConfiguration _configuration;
 
-        public ConatinerController(
+        public ContainerController(
             IHttpClientFactory clientFactory,
             IConfiguration configuration) {
             _clientFactory = clientFactory;
