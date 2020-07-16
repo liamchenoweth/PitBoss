@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Distributed;
 
@@ -15,6 +16,7 @@ namespace PitBoss
     {
         void PushObject(object value);
         object PopObject();
+        IEnumerable<string> AllStrings { get; }
     }
 
     public interface IDistributedQueue<T> : IDistributedQueue

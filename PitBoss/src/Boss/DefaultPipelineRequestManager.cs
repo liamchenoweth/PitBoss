@@ -53,10 +53,11 @@ namespace PitBoss {
 
         public void FinishRequest(OperationResponse response)
         {
+            if(response == null) throw new NullReferenceException("Response is null");
             using(var db = _contextFactory.GetContext())
             {
                 var request = db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
-                if(request == null) throw new Exception($"Request with ID {response.PipelineId} not found");
+                if(request == null) throw new KeyNotFoundException($"Request with ID {response.PipelineId} not found");
                 request.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;
                 request.ResponseId = response.Id;
                 db.SaveChanges();

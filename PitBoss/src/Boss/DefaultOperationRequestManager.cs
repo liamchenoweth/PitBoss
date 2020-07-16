@@ -38,7 +38,7 @@ namespace PitBoss {
         public void QueueRequest(OperationRequest request) 
         {
             var pipelineStep = _pipelineManager.Pipelines.Where(x => x.Name == request.PipelineName).FirstOrDefault()?.Steps.Single(x => x.Id == request.PipelineStepId);
-            if(pipelineStep == null) throw new Exception($"No pipeline found by name {request.PipelineName}");
+            if(pipelineStep == null) throw new KeyNotFoundException($"No pipeline found by name {request.PipelineName}");
             var requestString = $"{CachePrefix}:{pipelineStep.Name}";
             var queue = _memoryService.GetQueue<OperationRequest>(requestString);
             request.Queued = DateTime.Now;
@@ -72,6 +72,7 @@ namespace PitBoss {
 
         public bool ProcessResponse(OperationResponse response)
         {
+            if(response == null) throw new NullReferenceException("Given response is null");
             using(var db = _contextFactory.GetContext())
             {
                 if(db.OperationResponses.SingleOrDefault(x => x.Id == response.Id) != default)
@@ -84,9 +85,9 @@ namespace PitBoss {
                 }
                 db.SaveChanges();
                 var pipeline = _pipelineManager.GetPipeline(response.PipelineName);
+                if(pipeline == null) throw new KeyNotFoundException($"Pipeline {response.PipelineName} not found");
                 var currentStep = pipeline.Steps.Single(x => x.Id == response.PipelineStepId);
                 var nextStep = currentStep.GetNextStep(response);
-                if(pipeline == null) throw new Exception($"Pipeline {response.PipelineName} not found");
                 var pipeRequest = db.PipelineRequests.Where(x => x.Id == response.PipelineId).FirstOrDefault();
                 var dbRequest = db.OperationRequests.Single(x => x.Id == response.Id);
                 if(!response.Success && dbRequest.RetryCount < 5)
@@ -97,7 +98,7 @@ namespace PitBoss {
                     dbRequest.Status = RequestStatus.Pending;
                     dbRequest.RetryCount += 1;
                     QueueRequest(dbRequest);
-                    db.SaveChanges();
+                    db.SaveChanges(); 
                     return false;
                 }
                 dbRequest.Status = response.Success ? RequestStatus.Complete : RequestStatus.Failed;

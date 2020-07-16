@@ -40,6 +40,7 @@ namespace PitBoss {
 
         public void QueueRequest(OperationRequest request)
         {
+            if(request == null) throw new NullReferenceException("Tried to queue null request");
             _healthManager.RegisterRequest(request);
             _queuedRequests.Add(request);
         }

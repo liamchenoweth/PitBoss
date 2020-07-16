@@ -38,25 +38,6 @@ namespace PitBoss
             _configuration = configuration;
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            switch(_configuration["Boss:Database:UseDatabase"])
-            {
-                case "Postgres":
-                    var stringBuilder = new NpgsqlConnectionStringBuilder();
-                    stringBuilder.Host = _configuration["Boss:Database:Postgres:Host"];
-                    stringBuilder.Port = _configuration.GetValue<int>("Boss:Database:Postgres:Port");
-                    stringBuilder.Database = _configuration["Boss:Database:Postgres:Database"];
-                    stringBuilder.Username = _configuration["Boss:Database:Postgres:Username"];
-                    stringBuilder.Password = _configuration["Boss:Database:Postgres:Password"];
-                    options.UseNpgsql(stringBuilder.ToString());
-                    break;
-                default:
-                    options.UseSqlite(_configuration["Boss:Database:SQLite"]);
-                    break;
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             // var stringSaver = new ValueConverter<List<string>, List<StringWrapper>>(

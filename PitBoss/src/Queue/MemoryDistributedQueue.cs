@@ -46,6 +46,14 @@ namespace PitBoss
             throw new NotImplementedException("Current implementation does not allow this");
         }
 
+        public IEnumerable<string> AllStrings
+        {
+            get
+            {
+                return _queue;
+            }
+        }
+
         public IEnumerable<T> All 
         {
             get

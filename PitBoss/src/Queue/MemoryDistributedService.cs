@@ -17,6 +17,12 @@ namespace PitBoss
             _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
         }
 
+        public void CleanCache()
+        {
+            _queues = new ConcurrentDictionary<string, ConcurrentQueue<string>>();
+            _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+        }
+
         public MemoryDistributedService(
             ConcurrentDictionary<string, ConcurrentQueue<string>> queues, 
             MemoryDistributedCache cache)

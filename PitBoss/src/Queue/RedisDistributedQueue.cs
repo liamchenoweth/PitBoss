@@ -55,13 +55,20 @@ namespace PitBoss
             return JsonConvert.DeserializeObject<T>(obj);
         }
 
-        public IEnumerable<T> All 
+        public IEnumerable<string> AllStrings
         {
             get
             {
                 var db = _redis.GetDatabase();
-                var values = db.ListRange(_name);
-                return values.Select(x => JsonConvert.DeserializeObject<T>(x));
+                return db.ListRange(_name).Cast<string>();
+            }
+        }
+
+        public IEnumerable<T> All 
+        {
+            get
+            {
+                return AllStrings.Select(x => JsonConvert.DeserializeObject<T>(x));
             }
         }
     }
