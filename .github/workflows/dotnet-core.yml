@@ -17,12 +17,15 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.101
+    - name: Check things
+      run: ls
+      working-directory: ./Tests
     - name: Install dependencies
       run: dotnet restore
-      working-directory: Tests
+      working-directory: ./Tests
     - name: Build
       run: dotnet build --configuration Release --no-restore
-      working-directory: Tests
+      working-directory: ./Tests
     - name: Test
       run: dotnet test --no-restore --verbosity normal
-      working-directory: Tests
+      working-directory: ./Tests
